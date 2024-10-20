@@ -15,7 +15,7 @@ PLY_AKG_PSGREG01_INSTR
         ld b,h
         add hl,hl
         add hl,hl
-        add hl,de
+        add hl,bc
         ex de,hl        ;de=channel A
 PLY_AKG_PSGREG23_INSTR
         ld hl,0
@@ -23,7 +23,7 @@ PLY_AKG_PSGREG23_INSTR
         ld b,h
         add hl,hl
         add hl,hl
-        add hl,de       ;hl=channel B
+        add hl,bc       ;hl=channel B
         rl d:rra:rr d   ;switch channel A
         rl h:rra:rr h   ;switch channel B
 PLY_AKG_PSGREG8 equ $+1
