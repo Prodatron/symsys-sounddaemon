@@ -71,7 +71,7 @@ PLY_AKG_PLAYSOUNDEFFECTSSTREAM rla
     exx
     ld hl,PLY_AKG_PSGREG23_INSTR+1
     exx
-    rr c
+    srl c
     call PLY_AKG_PSES_PLAY
     ld ix,PLY_AKG_CHANNEL3_SOUNDEFFECTDATA
     ld iy,PLY_AKG_PSGREG10
@@ -155,7 +155,9 @@ PLY_AKG_PSES_H_AFTERRETRIG and 7
     call PLY_AKG_PSES_READNOISEIFNEEDEDANDOPENORCLOSENOISECHANNEL
     call PLY_AKG_PSES_READHARDWAREPERIOD
     ld a,16
-    jp PLY_AKG_PSES_MANAGEVOLUMEFROMA_HARD
+ld (iy+0),a
+ret
+    ;jp PLY_AKG_PSES_MANAGEVOLUMEFROMA_HARD
 PLY_AKG_PSES_READNOISEIFNEEDEDANDOPENORCLOSENOISECHANNEL jr c,PLY_AKG_PSES_READNOISEANDOPENNOISECHANNEL_OPENNOISE
     set 5,c
     ret 
@@ -1064,7 +1066,7 @@ PLY_AKG_CHANNEL1_INSTRUMENTSPEED cp 0
 PLY_AKG_CHANNEL1_SETINSTRUMENTSTEP ld (PLY_AKG_CHANNEL1_INSTRUMENTSTEP+2),a
     ld a,e
     ld (PLY_AKG_PSGREG8),a
-    rr d
+    srl d
     exx
     ld (PLY_AKG_PSGREG01_INSTR+1),hl
 PLY_AKG_CHANNEL2_PLAYINSTRUMENT_RELATIVEMODIFIERADDRESS
@@ -1091,7 +1093,7 @@ PLY_AKG_CHANNEL2_INSTRUMENTSPEED cp 0
 PLY_AKG_CHANNEL2_SETINSTRUMENTSTEP ld (PLY_AKG_CHANNEL2_INSTRUMENTSTEP+2),a
     ld a,e
     ld (PLY_AKG_PSGREG9),a
-    rr d
+    srl d
     exx
     ld (PLY_AKG_PSGREG23_INSTR+1),hl
 PLY_AKG_CHANNEL3_PLAYINSTRUMENT_RELATIVEMODIFIERADDRESS
@@ -1122,102 +1124,10 @@ PLY_AKG_CHANNEL3_SETINSTRUMENTSTEP ld (PLY_AKG_CHANNEL3_INSTRUMENTSTEP+2),a
     exx
     ld (PLY_AKG_PSGREG45_INSTR+1),hl
     call PLY_AKG_PLAYSOUNDEFFECTSSTREAM
-PLY_AKG_SENDPSGREGISTERS ex af,af'
-    ld de,49151
-    ld bc,65533
-    ld a,1
-PLY_AKG_PSGREG01_INSTR ld hl,0
-    db 237
-    db 113
-    ld b,d
-    out (c),l
-    ld b,e
-    out (c),a
-    ld b,d
-    out (c),h
-    ld b,e
-PLY_AKG_PSGREG23_INSTR ld hl,0
-    inc a
-    out (c),a
-    ld b,d
-    out (c),l
-    ld b,e
-    inc a
-    out (c),a
-    ld b,d
-    out (c),h
-    ld b,e
-PLY_AKG_PSGREG45_INSTR ld hl,0
-    inc a
-    out (c),a
-    ld b,d
-    out (c),l
-    ld b,e
-    inc a
-    out (c),a
-    ld b,d
-    out (c),h
-    ld b,e
-PLY_AKG_PSGREG6 equ $+1
-PLY_AKG_PSGREG8 equ $+2
-PLY_AKG_PSGREG6_8_INSTR ld hl,0
-    inc a
-    out (c),a
-    ld b,d
-    out (c),l
-    ld b,e
-    inc a
-    out (c),a
-    ld b,d
-    ex af,af'
-    out (c),a
-    ex af,af'
-    ld b,e
-    inc a
-    out (c),a
-    ld b,d
-    out (c),h
-    ld b,e
-PLY_AKG_PSGREG9 equ $+1
-PLY_AKG_PSGREG10 equ $+2
-PLY_AKG_PSGREG9_10_INSTR ld hl,0
-    inc a
-    out (c),a
-    ld b,d
-    out (c),l
-    ld b,e
-    inc a
-    out (c),a
-    ld b,d
-    out (c),h
-    ld b,e
-PLY_AKG_PSGHARDWAREPERIOD_INSTR ld hl,0
-    inc a
-    out (c),a
-    ld b,d
-    out (c),l
-    ld b,e
-    inc a
-    out (c),a
-    ld b,d
-    out (c),h
-    ld b,e
-    inc a
-    out (c),a
-PLY_AKG_PSGREG13_OLDVALUE ld a,255
-PLY_AKG_RETRIG or 0
-PLY_AKG_PSGREG13_INSTR ld l,0
-    cp l
-    jr z,PLY_AKG_PSGREG13_END
-    ld a,l
-    ld (PLY_AKG_PSGREG13_OLDVALUE+1),a
-    ld b,d
-    out (c),a
-    xor a
-    ld (PLY_AKG_RETRIG+1),a
-PLY_AKG_PSGREG13_END
-PLY_AKG_SAVESP ld sp,0
-    ret 
+
+PLY_AKG_SENDPSGREGISTERS
+    read"Dmn-Sound-PlayerNCX0.asm"
+
 PLY_AKG_CHANNEL1_MAYBEEFFECTS ld (PLY_AKG_EVENTTRACK_END+1),a
     bit 6,c
     jp z,PLY_AKG_CHANNEL1_BEFOREEND_STORECELLPOINTER
@@ -1735,89 +1645,79 @@ PLY_AKG_EFFECT_FORCEPITCHSPEED ld a,(de)
     ld (iy+65),a
     jp PLY_AKG_CHANNEL_RE_EFFECTRETURN
 PLY_AKG_EVENT db 0
-PLY_AKG_PERIODTABLE dw 6778
-    dw 6398
-    dw 6039
-    dw 5700
-    dw 5380
-    dw 5078
-    dw 4793
-    dw 4524
-    dw 4270
-    dw 4030
-    dw 3804
-    dw 3591
-    dw 3389
-    dw 3199
-    dw 3019
-    dw 2850
-    dw 2690
-    dw 2539
-    dw 2397
-    dw 2262
-    dw 2135
-    dw 2015
-    dw 1902
-    dw 1795
-    dw 1695
-    dw 1599
-    dw 1510
-    dw 1425
-    dw 1345
-    dw 1270
-    dw 1198
-    dw 1131
-    dw 1068
-    dw 1008
-    dw 951
-    dw 898
-    dw 847
-    dw 800
-    dw 755
-    dw 712
-    dw 673
-    dw 635
-    dw 599
-    dw 566
-    dw 534
-    dw 504
-    dw 476
-    dw 449
-    dw 424
-    dw 400
-    dw 377
-    dw 356
-    dw 336
-    dw 317
-    dw 300
-    dw 283
-    dw 267
-    dw 252
-    dw 238
-    dw 224
-    dw 212
-    dw 200
-    dw 189
-    dw 178
-    dw 168
+PLY_AKG_PERIODTABLE dw 3822
+    dw 3608
+    dw 3405
+    dw 3214
+    dw 3034
+    dw 2863
+    dw 2703
+    dw 2551
+    dw 2408
+    dw 2273
+    dw 2145
+    dw 2025
+    dw 1911
+    dw 1804
+    dw 1703
+    dw 1607
+    dw 1517
+    dw 1432
+    dw 1351
+    dw 1276
+    dw 1204
+    dw 1136
+    dw 1073
+    dw 1012
+    dw 956
+    dw 902
+    dw 851
+    dw 804
+    dw 758
+    dw 716
+    dw 676
+    dw 638
+    dw 602
+    dw 568
+    dw 536
+    dw 506
+    dw 478
+    dw 451
+    dw 426
+    dw 402
+    dw 379
+    dw 358
+    dw 338
+    dw 319
+    dw 301
+    dw 284
+    dw 268
+    dw 253
+    dw 239
+    dw 225
+    dw 213
+    dw 201
+    dw 190
+    dw 179
+    dw 169
     dw 159
     dw 150
-    dw 141
-    dw 133
-    dw 126
+    dw 142
+    dw 134
+    dw 127
     dw 119
-    dw 112
+    dw 113
     dw 106
     dw 100
-    dw 94
+    dw 95
     dw 89
     dw 84
-    dw 79
+    dw 80
     dw 75
     dw 71
     dw 67
     dw 63
-    dw 59
+    dw 60
     dw 56
     dw 53
     dw 50
@@ -1825,13 +1725,13 @@ PLY_AKG_PERIODTABLE dw 6778
     dw 45
     dw 42
     dw 40
-    dw 37
-    dw 35
-    dw 33
-    dw 31
+    dw 38
+    dw 36
+    dw 34
+    dw 32
     dw 30
     dw 28
-    dw 26
+    dw 27
     dw 25
     dw 24
     dw 22
@@ -1844,7 +1744,7 @@ PLY_AKG_PERIODTABLE dw 6778
     dw 15
     dw 14
     dw 13
-    dw 12
+    dw 13
     dw 12
     dw 11
     dw 11
@@ -1863,3 +1763,13 @@ PLY_AKG_PERIODTABLE dw 6778
     dw 5
     dw 5
     dw 4
+    dw 4
+    dw 4
+    dw 4
+    dw 4
+    dw 3
+    dw 3
+    dw 3
+    dw 3
+    dw 3
+    dw 2

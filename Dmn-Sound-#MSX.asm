@@ -1,11 +1,11 @@
 nolist
 
-DRIVER      equ 1    ;0=CPC, 1=MSX, 2=ZXS
-OPL4EMU     equ 0    ;WinAmp OPL4 test
+PLATFORM_TYPE   equ 1    ;0=CPC, 1=MSX, 2=PCW, 3=EPR, 4=SVM, 5=NCX, 6=ZNX
+OPL4EMU         equ 0    ;1=OPL4 emulation
 
 org #1000
 
-WRITE "f:\symbos\msx\soundd.exe"
+WRITE "f:\symbos\msx\sndd.exe"
 READ "..\..\..\SRC-Main\SymbOS-Constants.asm"
 READ "Dmn-Sound-Head.asm"
 READ "..\..\..\SRC-Main\Docs-Developer\symbos_lib-SystemManager.asm"

@@ -84,106 +84,10 @@ PLY_SE_PLAYSOUNDEFFECTSSTREAM ld ix,PLY_SE_CHANNEL1_SOUNDEFFECTDATA
     rr c
     call PLY_SE_PSES_PLAY
     ld a,c
+
 PLY_SE_SENDPSGREGISTERS
+    read"Dmn-Sound-PlayerEPRfx0.asm"
 
-ld b,a
-read"Dmn-Sound-VolEfx.asm"
-ld a,b
-
-    ex af,af'
-    ld de,49151
-    ld bc,65533
-    ld a,1
-PLY_SE_PSGREG01_INSTR ld hl,0
-    db 237
-    db 113
-    ld b,d
-    out (c),l
-    ld b,e
-    out (c),a
-    ld b,d
-    out (c),h
-    ld b,e
-PLY_SE_PSGREG23_INSTR ld hl,0
-    inc a
-    out (c),a
-    ld b,d
-    out (c),l
-    ld b,e
-    inc a
-    out (c),a
-    ld b,d
-    out (c),h
-    ld b,e
-PLY_SE_PSGREG45_INSTR ld hl,0
-    inc a
-    out (c),a
-    ld b,d
-    out (c),l
-    ld b,e
-    inc a
-    out (c),a
-    ld b,d
-    out (c),h
-    ld b,e
-PLY_SE_PSGREG6 equ $+1
-PLY_SE_PSGREG8 equ $+2
-PLY_SE_PSGREG6_8_INSTR ld hl,0
-    inc a
-    out (c),a
-    ld b,d
-    out (c),l
-    ld b,e
-    inc a
-    out (c),a
-    ld b,d
-    ex af,af'
-    out (c),a
-    ex af,af'
-    ld b,e
-    inc a
-    out (c),a
-    ld b,d
-    out (c),h
-    ld b,e
-PLY_SE_PSGREG9 equ $+1
-PLY_SE_PSGREG10 equ $+2
-PLY_SE_PSGREG9_10_INSTR ld hl,0
-    inc a
-    out (c),a
-    ld b,d
-    out (c),l
-    ld b,e
-    inc a
-    out (c),a
-    ld b,d
-    out (c),h
-    ld b,e
-PLY_SE_PSGHARDWAREPERIOD_INSTR ld hl,0
-    inc a
-    out (c),a
-    ld b,d
-    out (c),l
-    ld b,e
-    inc a
-    out (c),a
-    ld b,d
-    out (c),h
-    ld b,e
-    inc a
-    out (c),a
-PLY_SE_PSGREG13_OLDVALUE ld a,255
-PLY_SE_RETRIG or 0
-PLY_SE_PSGREG13_INSTR ld l,0
-    cp l
-    ret z
-    ld a,l
-    ld (PLY_SE_PSGREG13_OLDVALUE+1),a
-    ld b,d
-    out (c),a
-    xor a
-    ld (PLY_SE_RETRIG+1),a
-    ret 
 PLY_SE_PSES_PLAY ld l,(ix+0)
     ld h,(ix+1)
     ld a,l
@@ -256,8 +160,9 @@ PLY_SE_PSES_H_AFTERRETRIG and 7
     call PLY_SE_PSES_READNOISEIFNEEDEDANDOPENORCLOSENOISECHANNEL
     call PLY_SE_PSES_READHARDWAREPERIOD
     ld a,16
-    ld (iy+0),a
-    ret 
+ld (iy+0),a
+ret
+    ;jp PLY_SE_PSES_MANAGEVOLUMEFROMA_HARD
 PLY_SE_PSES_READNOISEIFNEEDEDANDOPENORCLOSENOISECHANNEL jr c,PLY_SE_PSES_READNOISEANDOPENNOISECHANNEL_OPENNOISE
     set 5,c
     ret 

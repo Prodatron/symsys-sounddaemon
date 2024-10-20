@@ -25,7 +25,6 @@ snderrdat   equ 7       ;wrong sound data in file
 snderrunk   equ 255     ;*unknown*
 
 
-
 ;==============================================================================
 ;### CODE AREA ################################################################
 ;==============================================================================
@@ -512,6 +511,9 @@ psgfrm3 or c:ld c,a
         push de
         push hl
         call PLY_AKG_PLAY
+if PLATFORM_TYPE=PLATFORM_EPR
+        call envelopeInterrupt
+endif
         pop hl
         pop de
         pop bc
@@ -530,6 +532,9 @@ psgfrm4 inc c:dec c
         push de
         push hl
         call PLY_SE_PLAYSOUNDEFFECTSSTREAM
+if PLATFORM_TYPE=PLATFORM_EPR
+        call envelopeInterrupt
+endif
         pop hl
         pop de
         pop bc
@@ -2523,7 +2528,7 @@ db #61,#11,#11,#11,#11,#11,#68,#88
 
 ;### info
 prgmsginf1  db "SymbOS Sound Daemon",0
-prgmsginf2  db " Version 0.9 (Build "
+prgmsginf2  db " Version 1.0 (Build "
 read "..\..\..\SRC-Main\build.asm"
             db "pdt)",0
 prgmsginf3  db " <c> 2024 SymbiosiS/Arkos/NOP",0
@@ -2567,12 +2572,21 @@ gentxtd01   db "Internal PSG (AY)",0
 gentxtd02   db "OPL4 Wavetable ("
 gentxtd02a  db "2048K)",0
 
-if     DRIVER=0
-statxtdrv   db "CPC driver 0.9",0
-elseif DRIVER=1
-statxtdrv   db "MSX driver 0.9",0
-elseif DRIVER=2
-statxtdrv   db "ZXS driver 0.9",0
+statxtdrv
+if     PLATFORM_TYPE=PLATFORM_CPC
+db "CPC driver 1.0",0
+elseif PLATFORM_TYPE=PLATFORM_MSX
+db "MSX driver 1.0",0
+elseif PLATFORM_TYPE=PLATFORM_PCW
+db "PCW driver 1.0",0
+elseif PLATFORM_TYPE=PLATFORM_EPR
+db "EPR driver 1.0",0
+elseif PLATFORM_TYPE=PLATFORM_SVM
+db "SVM driver 1.0",0
+elseif PLATFORM_TYPE=PLATFORM_NCX
+db "NCX driver 1.0",0
+elseif PLATFORM_TYPE=PLATFORM_ZNX
+db "ZNX driver 1.0",0
 endif
 
 ;### system sounds

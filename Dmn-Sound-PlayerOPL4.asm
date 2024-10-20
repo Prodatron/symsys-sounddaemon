@@ -1861,8 +1861,17 @@ opl4_load
 ;### Output     CF=0 -> OPL4 found
 ;###            CF=1 -> no hardware detected
 op4det  
-if DRIVER=2
-        scf     ;no OPL4 support on ZX Spectrum
+    if PLATFORM_TYPE=PLATFORM_PCW   ;no OPL4 support on Amstrad PCW (currently)
+        scf
+        ret
+elseif PLATFORM_TYPE=PLATFORM_SVM   ;no OPL4 support on SymbOSVM (currently)
+        scf
+        ret
+elseif PLATFORM_TYPE=PLATFORM_NCX   ;no OPL4 support on Amstrad NC
+        scf
+        ret
+elseif PLATFORM_TYPE=PLATFORM_ZNX   ;no OPL4 support on ZX Spectrum
+        scf
         ret
 endif
 
