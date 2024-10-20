@@ -3,6 +3,7 @@
 ;@                 S y m b O S   -   S o u n d - D a e m o n                  @
 ;@                                                                            @
 ;@             (c) 2023-2024 by Prodatron / SymbiosiS (Jörn Mika)             @
+;@     PSG-based Arkos Tracker music/effect player (c) by Targhan / Arkos     @
 ;@                                                                            @
 ;@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
