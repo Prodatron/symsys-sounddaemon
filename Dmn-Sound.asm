@@ -281,7 +281,7 @@ welext  db "w.swx",0
 
 
 ;### WELBEG -> starts welcome music
-welbegh db 0,0  ;handler, type (0=psg, 1=opl4)
+welbegh db 0,0  ;handler ID, type (0=psg, 1=opl4)
 
 welbeg  ld a,(cfgflgwel)
         or a
@@ -701,7 +701,16 @@ sndinf  ld a,(dvcsta)
 ;### Sends      CF=Error state (0=ok, 1=error; A=error code)
 ;###            - if CF is 0
 ;###            A=handle
-muslod  call muslod0
+muslod  push af
+        ld a,(cfgmusoff)
+        or a
+        jr z,muslod8
+        pop af
+        ld a,snderruse
+        scf
+        jp msgsnd0              ;error -> no music allowed
+muslod8 pop af
+        call muslod0
         jp msgsnd0              ;send result message to process
 
 muslod0 inc e:dec e
@@ -2608,7 +2617,7 @@ prgmsgmfx3  db "effects?",0
 ;### status text data
 stamentxt1  db "File",0
 stamentxt2  db "?",0
-stamentxt11 db "Save Settings",0
+stamentxt11 db "Save settings",0
 stamentxt12 db "Hide on startup",0
 stamentxt13 db "Quit",0
 stamentxt21 db "Index",0
@@ -2619,18 +2628,18 @@ statxtbta   db "Hide",0
 statxtbtb   db "Save",0
 
 statxttba1  db "Mixer",0
-statxttba2  db "System Sounds",0
+statxttba2  db "System sounds",0
 statxttba3  db "Settings",0
 statxttba4  db "Stats",0
 
 ;### general
-gentxtvct   db "Volume Control",0
+gentxtvct   db "Volume control",0
 gentxtmut   db "Mute",0
 
 gentxttfx   db "Effects",0
 gentxttms   db "Music",0
 
-gentxtdpr   db "Preferred Output Device",0
+gentxtdpr   db "Preferred output device",0
 
 gentxtd01
 if     PLATFORM_TYPE=PLATFORM_PCW
@@ -2643,7 +2652,7 @@ else
 db "Internal PSG (AY)",0
 endif
 
-gentxtd02   db "OPL4 Wavetable ("
+gentxtd02   db "OPL4 wavetable ("
 gentxtd02a  db "2048K)",0
 
 statxtdrv
@@ -2669,7 +2678,7 @@ systxtsnd   db "Sound:",0
 systxttst   db ">> Test",0
 systxtsta   db "play SymbOS startup sound",0
 
-systxtsht   db "Sound Scheme",0
+systxtsht   db "Sound scheme",0
 systxtshl   db "Load...",0
 systxtshs   db "Save...",0
 systxtshd   db "Default",0
@@ -2733,6 +2742,8 @@ settxtssp   db "PSG",0
 settxtsso   db "OPL4",0
 settxtssb   db "...",0
 
+settxtsmo   db "Disable music",0
+
 ;### stats
 statxtmfr   db "Memory usage",0
 
@@ -2794,11 +2805,13 @@ cfgefxvol   db 255  ;effect volume (0-255)
 cfgmusvol   db 255  ;music  volume (0-255)
 
 cfgsndevt   ;sound ID (0=none), volume (0-255) for each event
-db 05,128,07,128,06,128,13,128,13,128,11,128,11,128,12,128
-db 18,128,11,128,03,128,04,128,03,128,04,128,09,128,04,128
-db 15,128,09,128,10,128
-db                      00,128,00,128,00,128,00,128,00,128
-db 00,128,00,128,00,128,00,128,00,128,00,128,00,128,00,128
+db 05,128, 07,128, 06,128, 13,128, 13,128, 11,128, 11,128, 12,128
+db 18,128, 11,128, 03,128, 04,128, 03,128, 04,128, 09,128, 04,128
+db 15,128, 09,128, 10,128
+db                         00,128, 00,128, 00,128, 00,128, 00,128
+db 00,128, 00,128, 00,128, 00,128, 00,128, 00,128, 00,128, 00,128
+
+cfgmusoff   db 0    ;1=no music allowed
 
 cfg_end
 
@@ -2818,7 +2831,7 @@ stawindat   dw #3501,0,56,26,172,126,0,0,172,126,172,126,172,126,prgicnsml,statx
 stawindat0  dw stawingrpa,0,0:ds 136+14
 stawingrpa  db 19,0:dw stawindata,0,0,4*256+3,0,0,2
 stawingrpb  db 16,0:dw stawindatb,0,0,4*256+3,0,0,2
-stawingrpc  db 18,0:dw stawindatc,0,0,4*256+3,0,0,2
+stawingrpc  db 19,0:dw stawindatc,0,0,4*256+3,0,0,2
 stawingrpd  db 21,0:dw stawindatd,0,0,4*256+3,0,0,2
 
 stamendat   dw 2, 1+4,stamentxt1,stamendat1,0,     1+4,stamentxt2,stamendat2,0
@@ -2889,6 +2902,7 @@ dw      0,  255*256+17, setctrch0,     8,    29,    36,     8, 0    ;03=psg chan
 dw      0,  255*256+18, setctrch1,    63,    29,    36,     8, 0    ;04=psg channel 1
 dw      0,  255*256+18, setctrch2,    94,    29,    36,     8, 0    ;05=psg channel 2
 dw      0,  255*256+18, setctrch3,   137,    29,    36,     8, 0    ;06=psg channel 3
+
 dw      0,  255*256+ 3, setctrssf,     0,    45,   172,    32, 0    ;07=files frame
 stawindatc1
 dw      0,  255*256+ 1, setctrssp,     8,    58,    18,     8, 0    ;08=files psg text
@@ -2899,9 +2913,13 @@ dw      0,  255*256+32, setctrsio,    32,    56,    95,    12, 0    ;12=files op
 dw setfob,  255*256+16, settxtssb,   129,    56,    20,    12, 0    ;13=files opl4 browse
 dw cfgrel,  255*256+10, gfxrel,      151,    56,    13,    12, 0    ;14=reload sounds
 
-dw      0,  255*256+ 1, stactrdrv,     3,   113,   112,     8, 0    ;15=driver description
-dw staapl,  255*256+16, statxtbtb,    95,   111,    36,    12, 0    ;16=button apply
-dw stahid,  255*256+16, statxtbta,   133,   111,    36,    12, 0    ;17=button hide
+dw      0,  255*256+17, setctrmof,     4,    81,    60,     8, 0    ;15=disable music
+
+dw      0,  255*256+ 1, stactrdrv,     3,   113,   112,     8, 0    ;16=driver description
+dw staapl,  255*256+16, statxtbtb,    95,   111,    36,    12, 0    ;17=button apply
+dw stahid,  255*256+16, statxtbta,   133,   111,    36,    12, 0    ;18=button hide
+
+
 
 stawindatd                                                              ;*** STATS
 ; onclick         type   property   xpos   ypos   xlen   ylen
@@ -2991,6 +3009,9 @@ setctrsio   dw cfgfilwav,0,0,0,0,127:db 0
 stactrtba   db 4,2+4+48+64
 stactrtba0  db 0:dw statxttba1:db -1:dw statxttba2:db -1:dw statxttba3:db -1:dw statxttba4:db -1
 stactrdrv   dw statxtdrv,2+12
+
+setctrmof   dw cfgmusoff,settxtsmo:db 2+4
+
 
 ;### Stats
 stactrmfr   dw statxtmfr,2+4                ;memory frame

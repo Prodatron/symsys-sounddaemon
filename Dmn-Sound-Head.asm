@@ -2,7 +2,7 @@ nolist
 
 READ "..\..\..\SRC-Main\SymbOS-Constants.asm"
 
-PLATFORM_TYPE   equ PLATFORM_EPR
+PLATFORM_TYPE   equ PLATFORM_CPC
 OPL4EMU         equ 0               ;1=OPL4 emulation
 
 org #1000
