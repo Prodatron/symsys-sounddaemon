@@ -7,23 +7,25 @@ NC_VOL_MIN      equ 5
 
 ld (PLY_AKG_REST_A+1),a
 read"Dmn-Sound-VolMus.asm"
-PLY_AKG_REST_A
-        ld a,0          ;A=mixer (bit0,1,2=tone off)
 PLY_AKG_PSGREG01_INSTR
         ld hl,0
-        ld c,l
-        ld b,h
+        ld a,h:and #f:ld h,a
+        ld e,l
+        ld d,h
         add hl,hl
         add hl,hl
-        add hl,bc
+        add hl,de
         ex de,hl        ;de=channel A
 PLY_AKG_PSGREG23_INSTR
         ld hl,0
+        ld a,h:and #f:ld h,a
         ld c,l
         ld b,h
         add hl,hl
         add hl,hl
         add hl,bc       ;hl=channel B
+PLY_AKG_REST_A
+        ld a,0          ;A=mixer (bit0,1,2=tone off)
         rl d:rra:rr d   ;switch channel A
         rl h:rra:rr h   ;switch channel B
 PLY_AKG_PSGREG8 equ $+1

@@ -4,17 +4,19 @@
 ld b,a
 read"Dmn-Sound-VolEfx.asm"
 
-        ld a,b          ;A=mixer (bit0,1,2=tone off)
 PLY_SE_PSGREG01_INSTR
         ld hl,0
-        ld c,l
-        ld b,h
+        ld a,h:and #f:ld h,a
+        ld e,l
+        ld d,h
         add hl,hl
         add hl,hl
-        add hl,bc
+        add hl,de
         ex de,hl        ;de=channel A
 PLY_SE_PSGREG23_INSTR
         ld hl,0
+        ld a,h:and #f:ld h,a
+        ld a,b          ;A=mixer (bit0,1,2=tone off)
         ld c,l
         ld b,h
         add hl,hl

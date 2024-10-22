@@ -3,10 +3,10 @@
 ;@                 S y m b O S   -   S o u n d - D a e m o n                  @
 ;@                                                                            @
 ;@                             OPL4 Music DRIVER                              @
-;@                Maarten Loor/NOP (Z80 MOD player conversion)                @
-;@                 Peter Hanning (original 68000 MOD player)                  @
 ;@        Prodatron/SymbiosiS (MOD to SWM converter/compressor/merger,        @
 ;@                    2x speed-up, optimization, SoundDaemon adaption)        @
+;@                Maarten Loor/NOP (Z80 MOD player conversion)                @
+;@                 Peter Hanning (original 68000 MOD player)                  @
 ;@                                                                            @
 ;@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 

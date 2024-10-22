@@ -1,10 +1,27 @@
-PLATFORM_CPC    EQU 0   ;AMSTRAD CPC
-PLATFORM_MSX    EQU 1   ;MSX 1/2
-PLATFORM_PCW    EQU 2   ;AMSTRAD PCW 8XXX/9XXX/10
-PLATFORM_EPR    EQU 3   ;ENTERPRISE 64/128
-PLATFORM_SVM    EQU 4   ;SYMBOS VIRTUAL MACHINE
-PLATFORM_NCX    EQU 5   ;AMSTRAD NC 100/150/200
-PLATFORM_ZNX    EQU 6   ;ZX SPECTRUM NEXT
+nolist
+
+READ "..\..\..\SRC-Main\SymbOS-Constants.asm"
+
+PLATFORM_TYPE   equ PLATFORM_EPR
+OPL4EMU         equ 0               ;1=OPL4 emulation
+
+org #1000
+
+    if PLATFORM_TYPE=PLATFORM_CPC
+    write "f:\symbos\soundd.exe"
+elseif PLATFORM_TYPE=PLATFORM_MSX
+    write "f:\symbos\msx\soundd.exe"
+elseif PLATFORM_TYPE=PLATFORM_PCW
+    write "f:\symbos\pcw\soundd.exe"
+elseif PLATFORM_TYPE=PLATFORM_EPR
+    write "f:\symbos\ep\soundd.exe"
+elseif PLATFORM_TYPE=PLATFORM_SVM
+    write "f:\symbos\svm\soundd.exe"
+elseif PLATFORM_TYPE=PLATFORM_NCX
+    write "f:\symbos\nc\soundd.exe"
+elseif PLATFORM_TYPE=PLATFORM_ZNX
+    write "f:\symbos\nxt\soundd.exe"
+endif
 
 relocate_start
 
@@ -149,3 +166,46 @@ use_SyKernel_TMADDT     equ 0   ;Adds a counter for a process
 use_SyKernel_TMDELT     equ 0   ;Stops a counter of a process
 use_SyKernel_TMDELP     equ 0   ;Stops all counters of one process
 use_SyKernel_MTPRIO     equ 0   ;Changes the priority of a process
+
+READ "..\..\..\SRC-Main\Docs-Developer\symbos_lib-SystemManager.asm"
+READ "..\..\..\SRC-Main\Docs-Developer\symbos_lib-DesktopManager.asm"
+READ "..\..\..\SRC-Main\Docs-Developer\symbos_lib-FileManager.asm"
+READ "..\..\..\SRC-Main\Docs-Developer\symbos_lib-Kernel.asm"
+
+    if PLATFORM_TYPE=PLATFORM_CPC
+READ "Dmn-Sound-PlayerCPC.asm"
+READ "Dmn-Sound-PlayerCPCfx.asm"
+READ "Dmn-Sound-PlayerOPL4.asm"
+elseif PLATFORM_TYPE=PLATFORM_MSX
+READ "Dmn-Sound-PlayerMSX.asm"
+READ "Dmn-Sound-PlayerMSXfx.asm"
+READ "Dmn-Sound-PlayerOPL4.asm"
+elseif PLATFORM_TYPE=PLATFORM_PCW
+READ "Dmn-Sound-PlayerPCW.asm"
+READ "Dmn-Sound-PlayerPCWfx.asm"
+READ "Dmn-Sound-PlayerOPL4none.asm"
+elseif PLATFORM_TYPE=PLATFORM_EPR
+READ "App-SymAmp-EP.asm"
+READ "Dmn-Sound-PlayerEPR.asm"
+READ "Dmn-Sound-PlayerEPRfx.asm"
+READ "Dmn-Sound-PlayerOPL4.asm"
+elseif PLATFORM_TYPE=PLATFORM_SVM
+READ "Dmn-Sound-PlayerSVM.asm"
+READ "Dmn-Sound-PlayerSVMfx.asm"
+READ "Dmn-Sound-PlayerOPL4none.asm"
+elseif PLATFORM_TYPE=PLATFORM_NCX
+READ "Dmn-Sound-PlayerNCX.asm"
+READ "Dmn-Sound-PlayerNCXfx.asm"
+READ "Dmn-Sound-PlayerOPL4none.asm"
+elseif PLATFORM_TYPE=PLATFORM_ZNX
+READ "Dmn-Sound-PlayerZNX.asm"
+READ "Dmn-Sound-PlayerZNXfx.asm"
+READ "Dmn-Sound-PlayerOPL4none.asm"
+endif
+
+READ "Dmn-Sound.asm"
+
+App_EndTrns
+
+relocate_table
+relocate_end

@@ -36,6 +36,7 @@ stawinvis   db 0    ;0=not visible, -1=visible
 
 ;### PRGPRZ -> Application process
 prgprz  call prgdbl                 ;check, if already running
+        call prgver
 
         call dvcdet
         call cfglod
@@ -90,7 +91,7 @@ prgprz2 ld a,(App_MsgBuf+0)     ;*** message from desktop manager
         jr z,prgprz4
         ;...
         cp MSR_DSK_EVTCLK
-        jr z,prgtry
+        jp z,prgtry
         cp MSR_DSK_WCLICK
         jr nz,prgprz0
         ld a,(App_MsgBuf+2)
@@ -140,13 +141,55 @@ prgdbl  xor a
         ld (App_BegCode+prgdatnam),a
         ret
 
+;### PRGVER -> Plattform-Check
+prgver  ld hl,jmp_sysinf            ;*** Computer-Typ holen
+        ld de,256*1+5
+        ld ix,cfghrdtyp
+        ld iy,66+2+6+8
+        rst #28
+        ld a,(cfghrdtyp)
+        and #1f
+if     PLATFORM_TYPE=PLATFORM_CPC   ;CPC -> 0-4 OK
+        cp 4+1
+elseif PLATFORM_TYPE=PLATFORM_MSX   ;MSX -> 7-10 OK
+        cp 7
+        jr c,prgver1
+        cp 10+1
+elseif PLATFORM_TYPE=PLATFORM_PCW   ;PCW -> 12-13 OK
+        cp 12
+        jr c,prgver1
+        cp 13+1
+elseif PLATFORM_TYPE=PLATFORM_EPR   ;EP  -> 6 OK
+        cp 6
+        jr c,prgver1
+        cp 6+1
+elseif PLATFORM_TYPE=PLATFORM_SVM   ;SVM -> 18 OK
+        cp 18
+        jr c,prgver1
+        cp 18+1
+elseif PLATFORM_TYPE=PLATFORM_NCX   ;NC  -> 15-17 OK
+        cp 15
+        jr c,prgver1
+        cp 17+1
+elseif PLATFORM_TYPE=PLATFORM_ZNX   ;ZNX -> 20 OK
+        cp 20
+        jr c,prgver1
+        cp 20+1
+endif
+        ret c
+prgver1 ld b,8*1+1
+        ld hl,prgmsgwpf
+        call prginf0
+        jr prgend
+
 ;### PRGINF -> open info window
-prginf  ld a,(App_BnkNum)
+prginf  ld b,8*2+1+64+128
         ld hl,prgmsginf
-        ld b,8*2+1+64+128
-        ld de,stawindat
-        call SySystem_SYSWRN
+        call prginf0
         jp prgprz0
+prginf0 ld a,(App_BnkNum)
+        ld de,stawindat
+        jp SySystem_SYSWRN
 
 ;### PRGHLP -> shows help
 prghlp  call SySystem_HLPOPN
@@ -357,7 +400,7 @@ dvcdet1 ld (dvcsta),a
 ;### DVCEXS -> checks, if required device is available
 ;### Input      D=device (1=PSG, 2=OPL4)
 ;### Output     ZF=0 -> device not available, CF=1, A=errorcode
-;### Destryoed  AF
+;### Destroyed  AF
 dvcexs  ld a,(dvcsta)
         and d
         cp d
@@ -2534,6 +2577,25 @@ read "..\..\..\SRC-Main\build.asm"
             db "pdt)",0
 prgmsginf3  db " <c> 2024 SymbiosiS/Arkos/NOP",0
 
+prgmsgwpf1 db "Wrong platform! This Sound Daemon",0
+prgmsgwpf2 db "is for the "
+if     PLATFORM_TYPE=PLATFORM_CPC
+                       db "AMSTRAD CPC.",0
+elseif PLATFORM_TYPE=PLATFORM_MSX
+                       db "MSX1/2(+)/TURBOR.",0
+elseif PLATFORM_TYPE=PLATFORM_PCW
+                       db "AMSTRAD PCW JOYCE.",0
+elseif PLATFORM_TYPE=PLATFORM_EPR
+                       db "ENTERPRISE 64/128.",0
+elseif PLATFORM_TYPE=PLATFORM_SVM
+                       db "SYMBOS VM.",0
+elseif PLATFORM_TYPE=PLATFORM_NCX
+                       db "AMSTRAD NC1x0/200.",0
+elseif PLATFORM_TYPE=PLATFORM_ZNX
+                       db "ZX SPECTRUM NEXT.",0
+endif
+prgmsgwpf3 db "Please replace SOUNDD.EXE .",0
+
 prgmsgshm1  db "Are you sure you want to",0
 prgmsgshm2  db "reset the current sound",0
 prgmsgshm3  db "scheme?",0
@@ -2569,7 +2631,18 @@ gentxttfx   db "Effects",0
 gentxttms   db "Music",0
 
 gentxtdpr   db "Preferred Output Device",0
-gentxtd01   db "Internal PSG (AY)",0
+
+gentxtd01
+if     PLATFORM_TYPE=PLATFORM_PCW
+db "External AY (dk'tronics)",0
+elseif PLATFORM_TYPE=PLATFORM_EPR
+db "Internal PSG (Dave)",0
+elseif PLATFORM_TYPE=PLATFORM_NCX
+db "Internal beepers",0
+else
+db "Internal PSG (AY)",0
+endif
+
 gentxtd02   db "OPL4 Wavetable ("
 gentxtd02a  db "2048K)",0
 
@@ -2704,6 +2777,8 @@ prgtimn db 0
 timmsgb ds 14
 
 
+cfghrdtyp   db 0
+
 ;### CONFIG ###################################################################
 cfg_beg
 
@@ -2735,6 +2810,7 @@ prgmsginf  dw prgmsginf1,4*1+2,prgmsginf2,4*1+2,prgmsginf3,4*1+2,0,prgicnbig,prg
 prgmsgshm  dw prgmsgshm1,4*1+2,prgmsgshm2,4*1+2,prgmsgshm3,4*1+2
 prgmsgmmu  dw prgmsgshm1,4*1+2,prgmsgmmu2,4*1+2,prgmsgmmu3,4*1+2
 prgmsgmfx  dw prgmsgshm1,4*1+2,prgmsgmmu2,4*1+2,prgmsgmfx3,4*1+2
+prgmsgwpf  dw prgmsgwpf1,4*1+2,prgmsgwpf2,4*1+2,prgmsgwpf3,4*1+2
 
 
 ;### status window data
