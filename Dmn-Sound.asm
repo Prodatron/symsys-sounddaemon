@@ -626,8 +626,10 @@ psgchnmax   equ 3
 psgchnmem   ds psgchnmax*psgchnlen
 
 ;### OPL4 channel usage
-op4chncur   db 1
-op4chnmem   ds 20*2,-1 ;handle, ID
+op4chnmax   equ 16
+op4chn1st   equ 8
+op4chncur   db 1                ;1-op4chnmax
+op4chnmem   ds op4chnmax*2,-1   ;handle, ID
 op4pantab   db 09,10,11,12,13,14,15,00,00,01,02,03,04,05,06,07
 
 ;### Effect handles
@@ -1243,11 +1245,11 @@ efxplyj ld (efxplyh+1),a    ;e=default pitch/4
         ld hl,op4chncur
         dec (hl)
         jr nz,efxplyd
-        ld (hl),20
-efxplyd ld a,(hl)
+        ld (hl),op4chnmax
+efxplyd ld a,(hl)           ;a=1-op4chnmax
 
         ld l,a
-        dec l               ;l=channel (0-19)
+        dec l               ;l=channel (0-..)
         ld h,0
         add hl,hl
         push bc
@@ -1260,8 +1262,8 @@ efxplyd ld a,(hl)
         ld (hl),c           ;store ID
         pop bc
 
-        add 3
-        ld b,a              ;b=channel (4-23)
+        add op4chn1st-1
+        ld b,a              ;b=channel (op4chn1st-..)
 efxplyc ld hl,0             ;hl=pitch/0
         ld a,l
         or h
@@ -1270,7 +1272,7 @@ efxplyh ld hl,0             ;no pitch -> use sample default
         add hl,hl
         add hl,hl
 efxplyi ld a,b
-        jp op4xpl           ;C=opl4 sample ID (64-255), HL=amiga pitch (108-), A=channel (4-23), D=volume (0=silent, 64=loud), E=panning (0-15)
+        jp op4xpl           ;C=opl4 sample ID (64-255), HL=amiga pitch (108-), A=channel (op4chn1st-23), D=volume (0=silent, 64=loud), E=panning (0-15)
 
 ;### EFXSTP -> Stops all effects with a specified ID
 ;### Input     A=handle, L=Effect ID (-1=all effects)
@@ -1372,6 +1374,29 @@ rmtply  call psgfrm
         jp jmp_bnkret
 
 
+;### SNDCOP -> cooperation with SymAmp
+;### Input      A=type (0 -> ask for PSG usage, 1 -> ask for OPL4 usage, 16 -> release PSG usage, 17 -> release OPL4 usage)
+;### Sends      (only for 0 and 1)
+;###            CF = status (0=ok, 1=device is currently occupied)
+;###            if ok -> DE,HL=OPL4 ram start address, A=number of total 64K blocks
+sndcop  cp 16
+        jr nc,sndrel
+        cp 1
+        jr z,sndcop1
+        ;mute psg and disable psg music/effect play
+        or a
+        jp msgsnd0
+sndcop1 ;...check if opl4 music/effects loaded -> cf=1 yes
+        jp c,msgsnd0
+        ;mute opl4 and disable opl4 music play
+        ld a,(opl4bank)
+        ;de,hl=first ram
+        or a
+        jp msgsnd0
+sndrel  ;...reactivate opl4/psg
+        jp msgsnd0
+
+
 ;==============================================================================
 ;### MESSAGE HANDLING #########################################################
 ;==============================================================================
@@ -1381,7 +1406,7 @@ rmtply  call psgfrm
 ;### Output     [process receives answer]
 ;### Destroyed  AF,BC,DE,HL,IX,IY
 msgcmdtab
-dw 000000,sndinf,000000,000000,000000,000000,rmtact,rmtdct  ;general (00-07)
+dw 000000,sndinf,000000,sndcop,000000,000000,rmtact,rmtdct  ;general (00-07)
 dw muslod,musfre,musrst,muscon,musstp,musvol,000000,000000  ;music   (08-15)
 dw efxlod,efxfre,efxply,efxstp,000000,000000,000000         ;effects (16-22, 23=efxevt)
 
@@ -1414,9 +1439,10 @@ msgcmd1 jp 0
 
 ;### MSGSND -> send reply to process
 ;### Input      (sndprcnum)=process ID
-;###            AF[,HL]=registers
+;###            AF[,HL[,BC,DE]]=registers
 ;### Destroyed  AF,BC,DE,HL,IX,IY
 msgsnd2 ld (App_MsgBuf+04),bc
+        ld (App_MsgBuf+06),de
 msgsnd  ld (App_MsgBuf+08),hl
 msgsnd0 push af
         pop hl
