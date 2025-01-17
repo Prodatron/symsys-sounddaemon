@@ -12,7 +12,6 @@
 
 ;todo
 ;! music/effects destroy samples from each other when loading in a random order
-;- knackser beim sample laden
 
 ;features
 ;- commands 8 panning -> E8x
@@ -40,6 +39,54 @@
 ;        add hl,bc
 ;        jp (hl)     ;10 additional nops
 
+
+
+;--- PATTERN DATA HANDLING ----------------------------------------------------
+;### PATADR -> gets address of current pattern row
+;### PATDCR -> unpacks one pattern row
+
+;--- SAMPLE DATA HANDLING -----------------------------------------------------
+;### SMPO4I -> reserves opl4 sample ID
+;### SMPEFX -> loads all samples from an effect collection
+;### SMPEFR -> removes all already reserved/loaded samples from an effect collection
+;### SMPALL -> loads all samples for a music
+;### SMPREM -> removes all samples from a music
+;### SMPNEW -> creates new sample
+;### SMPLOD -> loads sample from opened file into OPL4 ram
+;### SMPRES -> reserve memory for one sample
+;### SMPFRE -> release sample memory
+;### SMPBTL -> get number of pages/bits
+;### SMPBTA -> Bitadresse holen
+;### SMPBTT -> Bit testen
+;### SMPBTS -> Bit setzen
+;### SMPBTC -> Bit löschen
+
+;--- OPL4 ROUTINES ------------------------------------------------------------
+;### OP4DET -> tries to detect an OPL4 chip
+;### OP4MEM -> detects OPL4 wavetable memory
+;### OP4RES -> resets OPL4 hardware (enables WAV)
+;### OP4SET -> sets multiple OPL4 registers
+;### OP4ADR -> sets OPL4 ram read/write address
+;### OP4VMA -> sets OPL4 master volume
+;### OP4VTR -> get volume translation
+;### OP4VFX -> sets effects master volume
+;### OP4VMU -> sets music master volume
+;### OP4VCH -> set channel volume
+;### OP4KON -> set key on and panning
+;### OP4KOF -> set volume off, then key off
+;### OP4KEY -> prepare OPL4 key on/off and panning
+;### OP4TON -> sets tone
+;### OP4SMP -> starts new sample, if changed
+
+;--- DEVICE DRIVER ROUTINES (OPL4) --------------------------------------------
+;### OP4MIN -> resets opl4 music to the beginning
+;### OP4MPL -> starts playing OPL4 music
+;### OP4STP -> pauses the music and mutes the OPL4
+;### OP4FRM -> plays one OPL4 music frame
+;### OP4XPL -> starts an OPL4 sound effect
+
+
+;---
 
 
 MACRO   opl4_wt
@@ -1613,7 +1660,7 @@ endif
 
 
 smpbtn  equ 2048/256*1024       ;number of bits
-smpmem  db %11111111,%00001111  ;sample headers = 12*256
+smpmem  db %11111111,%00001111  ;sample headers (use the first 12*256)
         ds smpbtn/8-2           ;reserved sample memory (bit=1 -> 256byte reserved)
 smppag  dw 12                   ;reserved 256 byte pages
 
@@ -1896,7 +1943,7 @@ op4det1 ld hl,smpmem
         push hl
         ld bc,2048/256/8*1024-1
         ld (hl),#ff
-        ldir
+        ldir                ;first mark all as reserved
         di
 if OPL4EMU=0
         call op4mem
@@ -1904,7 +1951,7 @@ else
 ld a,4
 endif
         ei
-        ld (op4_64kbnk),a   ;a=2-32; totmem = a*65536, totpag = a*65536/256, totbyt = a*65536/256/8 = a*32
+        ld (op4_64kbnk),a   ;a=2-32=totbnk; totmem = a*65536, totpag = a*65536/256, totbyt in smpmem = a*65536/256/8 = a*32
         add a
         add a       ;*4
         ld l,a
@@ -1918,11 +1965,11 @@ endif
         pop hl
         pop de
         push hl
-        ld (hl),#00
+        ld (hl),#00         ;mark available as free
         ldir
         pop hl
         ld (hl),#ff
-        ld (hl),#0f
+        ld (hl),#0f         ;first 12 pages (3K) are sample headers
         or a
         ret
 
@@ -2312,7 +2359,8 @@ op4stp  xor a
 
 ;### OP4FRM -> plays one OPL4 music frame
 ;### Destroyed  AF,BC,DE,HL,IX,IY
-op4frm  ld a,(op4ply)
+op4frm  db 0
+        ld a,(op4ply)
         or a
         ret z
         di                  ;* play music
@@ -2321,7 +2369,7 @@ op4frm  ld a,(op4ply)
         ret
 
 ;### OP4XPL -> starts an OPL4 sound effect
-;### Input      C=opl4 sample ID (64-255), HL=amiga pitch (108-), A=channel (4-23), D=volume (0=silent, 64=loud), E=panning (0-15)
+;### Input      C=opl4 sample ID (64-255), HL=amiga pitch (108-), A=channel (op4chn1st-23), D=volume (0=silent, 64=loud), E=panning (0-15)
 ;### Destroyed  AF,BC,DE,HL
 op4xpl  push de
         ld (channel),a

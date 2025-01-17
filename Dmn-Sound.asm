@@ -2,17 +2,119 @@
 ;@                                                                            @
 ;@                 S y m b O S   -   S o u n d - D a e m o n                  @
 ;@                                                                            @
-;@             (c) 2023-2024 by Prodatron / SymbiosiS (Jörn Mika)             @
+;@             (c) 2023-2025 by Prodatron / SymbiosiS (Jörn Mika)             @
 ;@     PSG-based Arkos Tracker music/effect player (c) by Targhan / Arkos     @
 ;@                                                                            @
 ;@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 ;Todo
+;- disable system sounds for a window/control group
 
 ;low
 ;- sound daemon GUI is loosing events/gets them too late (e.g. alert window) -> desktop/system library ignores them -> patch it
 ;- screen saver open/close window?
 ;- sound buffer config
+
+
+;--- CODE AREA ----------------------------------------------------------------
+;### PRGPRZ -> Application process
+;### PRGKEY -> key clicked
+;### PRGEND -> End program
+;### PRGDBL -> Check, if program is already running
+;### PRGVER -> Plattform-Check
+;### PRGINF -> open info window
+;### PRGHLP -> shows help
+;### PRGTRY -> tray icon clicked
+;### PRGTIM -> Program timer, calls player routine
+;### STAAPL -> save config
+;### STAHID -> hide status window
+;### STATAB -> changes status window tab
+
+;--- WELCOME MUSIC ------------------------------------------------------------
+;### WELBEG -> starts welcome music
+;### WELEND -> ends and removes welcome music
+
+;--- DESKTOP MANAGER COMMUNICATION --------------------------------------------
+;### DSKONL -> set sound daemon online for desktop manager
+;### DSKOFF -> set sound daemon offline for desktop manager
+
+;--- DEVICE DETECTION ---------------------------------------------------------
+;### DVCDET -> detects available sound devices
+;### DVCEXS -> checks, if required device is available
+
+;--- DEVICE DRIVER ROUTINES (PSG) ---------------------------------------------
+;### PSGMIN -> resets PSG music to the beginning
+;### PSGMPL -> starts playing PSG music
+;### PSGSTP -> pauses the music and mutes the PSG
+;### PSGXIN -> inits PSG sound effect collection
+;### PSGXPL -> starts a PSG sound effect
+;### PSGFRM -> plays one PSG music frame
+
+;--- MUSIC HANDLING -----------------------------------------------------------
+;### MUSCHK -> check, if correct handle is used
+
+;--- VARIABLES ----------------------------------------------------------------
+;### PSG channel usage
+;### OPL4 channel usage
+;### OPL4 sample data
+;### OPL4 pointers
+;### EFXHND -> get handle data record and type
+
+;--- SERVICE ROUTINES ---------------------------------------------------------
+;### SNDINI -> returns information about available and preferred sound hardware
+;### MUSLOD -> Loads and inits a music collection
+;### MUSFRE -> Removes a music collection
+;### MUSRST -> Starts playing music from the beginning
+;### MUSCON -> Continues playing the current music
+;### MUSSTP -> Pauses and mutes music
+;### MUSVOL -> sets music volume
+;### EFXLOD -> Loads and inits an effect collection
+;### EFXFRE -> Removes an effect collection
+;### EFXEVT -> Starts playing an event
+;### EFXPLY -> Starts playing an effect
+;### EFXSTP -> Stops all effects with a specified ID
+;### RMTACT -> activate remote playing
+;### RMTDCT -> deactivates remote playing
+;### RMTPLY -> plays one remote frame
+;### SNDCOO -> cooperation with SymAmp/3rd party sound players
+
+;--- MESSAGE HANDLING ---------------------------------------------------------
+;### MSGCMD -> execute sound command
+;### MSGSND -> send reply to process
+
+;--- SETTINGS -----------------------------------------------------------------
+;### PSG browse file
+;### OPL4 browse file
+;### MEMMUS -> clean-up loaded music
+;### MEMEFX -> clean-up all loaded effects
+
+;--- CONFIG WINDOW ------------------------------------------------------------
+;### CFGPTH -> Generates config pathes
+;### CFGLOD -> load config data
+;### CFGSAV -> save config data
+;### CFGINI -> prepare config settings
+;### CFGSND -> load system sound effects
+;### CFGREL -> reloads system sounds
+;### CFGHID -> hide on start up on/off
+;### CFGVOL -> calculates volume lookup table
+
+;--- SUB ROUTINES -------------------------------------------------------------
+;### MEMUPD -> updates memory values
+;### MEMSMP -> calculate total sample length
+;### PSGREL -> relocates psg data (Arkos Tracker II AKG/AKX with attached relocator table)
+;### FILCHK -> check, if correct file data and get length
+;### CLCUCS -> Change letters to uppercase
+;### STRINP -> inits textinput (set length, cursor)
+;### STRLEN -> Ermittelt Länge eines Strings
+;### CLCM16 -> Multipliziert zwei Werte (16bit)
+;### CLCMUL -> Multipliziert zwei Werte (24bit)
+;### CLCMU8 -> multiplication 8bit unsigned
+;### CLCD68 -> division 16/8 unsigned
+;### CLCCMP -> compare 16bit values
+;### CLCN32 -> Wandelt 32Bit-Zahl in ASCII-String um (mit 0 abgeschlossen)
+;### CLCNUM -> Converts 16bit number into ASCII string (0-terminated)
+
+;---
 
 
 ;### ERROR CODES
@@ -21,15 +123,34 @@ snderrdvc   equ 2       ;required device is not available
 snderrfil   equ 3       ;error while reading from file
 snderrmem   equ 4       ;cpu memory full
 snderrme4   equ 5       ;OPL4 memory full
+snderrocc   equ 6       ;sound device is occupied
 snderrdat   equ 7       ;wrong sound data in file
 
 snderrunk   equ 255     ;*unknown*
+
+    if PLATFORM_TYPE=PLATFORM_CPC
+    PLATFORM_OPL4 equ 1
+elseif PLATFORM_TYPE=PLATFORM_MSX
+    PLATFORM_OPL4 equ 1
+elseif PLATFORM_TYPE=PLATFORM_PCW
+    PLATFORM_OPL4 equ 0
+elseif PLATFORM_TYPE=PLATFORM_EPR
+    PLATFORM_OPL4 equ 1
+elseif PLATFORM_TYPE=PLATFORM_SVM
+    PLATFORM_OPL4 equ 0
+elseif PLATFORM_TYPE=PLATFORM_NCX
+    PLATFORM_OPL4 equ 0
+elseif PLATFORM_TYPE=PLATFORM_ZNX
+    PLATFORM_OPL4 equ 0
+endif
+
 
 
 ;==============================================================================
 ;### CODE AREA ################################################################
 ;==============================================================================
 
+mixwin_id   db -1   ;mixer  window ID
 stawin_id   db 0    ;status window ID
 stawinvis   db 0    ;0=not visible, -1=visible
 
@@ -37,9 +158,20 @@ stawinvis   db 0    ;0=not visible, -1=visible
 ;### PRGPRZ -> Application process
 prgprz  call prgdbl                 ;check, if already running
         call prgver
+        ld hl,prgmsgam1
+        call prgamp
+        jp z,prgend1
 
         call dvcdet
-        call cfglod
+
+        ld a,(App_BnkNum)
+        ld de,prgicnsml
+        ld l,-1
+        call SyDesktop_STIADD       ;add systray icon
+        jr c,prgprz3
+        ld (prgtryn),a
+
+prgprz3 call cfglod
         call cfgini
 
         ld de,vollupmus
@@ -52,18 +184,10 @@ prgprz  call prgdbl                 ;check, if already running
 
         call rmtdct                 ;Timer hinzufügen
 
-        call welbeg                 ;start welcome music
+        call welbeg                 ;start welcome music (only if PSG)
         call dskonl                 ;activate desktop sound effects
 
         call SySystem_HLPINI        ;init help
-        ld a,(App_BnkNum)
-        ld de,prgicnsml
-        ld l,-1
-        call SyDesktop_STIADD       ;add systray icon
-        jr c,prgprz3
-        ld (prgtryn),a
-prgprz3 ;...
-
         ld a,(cfgflghid)
         or a
         call z,prgtry1              ;open main window
@@ -115,8 +239,29 @@ prgkey  ld a,(App_MsgBuf+4)
         ;...
         jr prgprz0
 
+;### PRGAMP -> Check, if SymAmp running
+;### Input      HL=message
+;### Output     ZF=1 -> SymAmp is running
+prgampn db "SymAmp":ds 6
+prgamp  push hl
+        call prgamp1
+        pop hl
+        ret nz
+        ld b,8*1+1
+        call prginf0
+        xor a
+        ret
+prgamp1 ld e,0
+        ld hl,prgampn
+        ld a,(App_BnkNum)
+        call SySystem_PRGSRV
+        or a
+        ret
+
 ;### PRGEND -> End program
-prgend
+prgend  ld hl,prgmsgam2
+        call prgamp
+        jp z,prgprz0
 prgend1 call dskoff
         call psgstp
         ld a,(prgtryn)
@@ -198,13 +343,22 @@ prghlp  call SySystem_HLPOPN
 ;### PRGTRY -> tray icon clicked
 prgtryn db 0
 
-prgtry  ld a,(stawinvis)
+prgtry  ld a,(App_MsgBuf+2) ;0=left, 1=right, 2=left double click
+        cp 1
+        jr z,prgtryc
+        ld a,(stawinvis)
+        or a
+        jr z,prgtry3
+
+prgtry0 ld a,(stawinvis)        ;** open/focus status
         or a
         ld a,(stawin_id)
         jr nz,prytry2
         call prgtry1
         jp prgprz0
-prgtry1 ld a,(App_BnkNum)
+prytry2 call SyDesktop_WINTOP       ;focus status
+        jp prgprz0
+prgtry1 ld a,(App_BnkNum)           ;open status
         ld de,stawindat
         call SyDesktop_WINOPN
         ret c
@@ -212,8 +366,54 @@ prgtry1 ld a,(App_BnkNum)
         ld a,-1
         ld (stawinvis),a
         ret
-prytry2 call SyDesktop_WINTOP
+
+prgtryc ld de,trymendat         ;** open context menu
+        ld a,(App_BnkNum)
+        ld hl,-1
+        call SyDesktop_MENCTX
+        jp c,prgprz0
+        ld a,l:or h
+        jp z,prgprz0
+        jp (hl)
+prgtrym call prgtryb            ;** menu -> open mixer
+        ld a,(mixwin_id)        ;open only, if not open
+        inc a
+        jr z,prgtry5
         jp prgprz0
+prgtrys call prgtrya            ;** menu -> open status
+        jr prgtry0
+prgtry3 ld a,(mixwin_id)        ;** left click, no status -> open/close mixer
+        inc a
+        jr z,prgtry5
+        call prgtry4                ;close
+        jp prgprz0
+prgtry5 ld hl,jmp_scrget        ;** open mixer
+        rst #28
+        ld bc,-mixwinxln-1
+        add ix,bc
+        ld (mixwindat+4),ix
+        ld bc,-mixwinyln-1-14
+        add iy,bc
+        ld (mixwindat+6),iy
+        ld a,(App_BnkNum)
+        ld de,mixwindat
+        call SyDesktop_WINOPN
+        jp c,prgprz0
+        ld (mixwin_id),a
+        jp prgprz0
+prgtry4 ld a,(mixwin_id)            ;close mixer
+        call SyDesktop_WINCLS
+        ld a,-1
+        ld (mixwin_id),a
+        ret
+prgtrya ld a,(mixwin_id)        ;closes mixer, if open
+        inc a
+        jr nz,prgtry4
+        ret
+prgtryb ld a,(stawinvis)        ;closes status, if open
+        or a
+        jr nz,stahid0
+        ret
 
 ;### PRGTIM -> Program timer, calls player routine
 prgtim  call psgfrm
@@ -234,11 +434,12 @@ staapl  call cfgsav
         jp prgprz0
 
 ;### STAHID -> hide status window
-stahid  xor a
+stahid  call stahid0
+        jp prgprz0
+stahid0 xor a
         ld (stawinvis),a
         ld a,(stawin_id)
-        call SyDesktop_WINCLS
-        jp prgprz0
+        jp SyDesktop_WINCLS
 
 ;### STATAB -> changes status window tab
 statabadr   dw stawingrpa,stawingrpb,stawingrpc,stawingrpd
@@ -287,9 +488,9 @@ welbeg  ld a,(cfgflgwel)
         or a
         ret z
         ld a,(cfgdvcprf)
-        ld (welbegh+1),a
         or a
-        jr nz,welbeg1
+        ret nz                  ;opl4 -> already done, finished
+        ld (welbegh+1),a
 
         ld de,256*1+1           ;*** psg music
         ld a,(App_BnkNum)
@@ -301,7 +502,14 @@ welbeg  ld a,(cfgflgwel)
         ld l,0                  ;start music
         call musrst
         ld hl,50*5
-        jr welbeg2
+welbeg2 ld (welcnt),hl          ;activate timer counter
+        ld hl,(prgtim0)
+        ld (welend1+1),hl
+        di
+        ld hl,0
+        ld (prgtim0),hl
+        ei
+        ret
 
 welbeg1 ld hl,0                 ;*** opl4 effect
         ld de,-6
@@ -332,17 +540,7 @@ welbeg1 ld hl,0                 ;*** opl4 effect
         ld hl,256*255+0
         ld bc,256*1+128
         ld de,0
-        call efxply
-        ld hl,50*5
-
-welbeg2 ld (welcnt),hl          ;activate timer counter
-        ld hl,(prgtim0)
-        ld (welend1+1),hl
-        di
-        ld hl,0
-        ld (prgtim0),hl
-        ei
-        ret
+        jp efxply
 
 ;### WELEND -> ends and removes welcome music
 welend  ld hl,(welbegh)         ;stop music
@@ -448,7 +646,7 @@ psgstp  di
                call PLY_AKG_STOPSOUNDEFFECTFROMCHANNEL
         ld a,1:call PLY_AKG_STOPSOUNDEFFECTFROMCHANNEL
         ld a,2:call PLY_AKG_STOPSOUNDEFFECTFROMCHANNEL
-        exx
+psgstp0 exx
         ex af,af'
         push af
         push bc
@@ -513,7 +711,7 @@ psgxpl1 di
 
 ;### PSGFRM -> plays one PSG music frame
 ;### Destroyed  AF,BC,DE,HL,IX,IY
-psgfrm
+psgfrm  db 0
 psgfrm0 ld hl,(PLY_SE_CHANNEL1_SOUNDEFFECTDATA)
         ld a,l:or h
         jr nz,psgfrm1
@@ -682,16 +880,19 @@ efxhnd  add a:add a
 ;### SERVICE ROUTINES #########################################################
 ;==============================================================================
 
-;### SNDINF -> returns information about available and preferred sound hardware
+;### SNDINI -> returns information about available and preferred sound hardware
 ;### Sends      A=hardware flags (+1=psg  available, +2=opl4 available),
-;###            L=preferred hardware (0=no hardware available, 1=psg, 2=opl4),
-sndinf  ld a,(dvcsta)
+;###            L=preferred hardware (0=no hardware available, 1=psg, 2=opl4), H=number of OPL4 64K ram banks (if available), C=master effect volume, B=master music volume
+sndini  ld a,(dvcsta)
         ld l,a
         or a
         jp z,msgsnd
         ld hl,(genctrdls+12)
+        ld de,(op4_64kbnk)
+        ld h,e
         inc l
-        jp msgsnd
+        ld bc,(cfgefxvol)
+        jp msgsnd2
 
 ;### MUSLOD -> Loads and inits a music collection
 ;### Input      D=Device (1=PSG, 2=OPL4),
@@ -706,8 +907,11 @@ sndinf  ld a,(dvcsta)
 muslod  push af
         ld a,(cfgmusoff)
         or a
+        jr nz,muslod9
+        ld a,(op4frm)
+        or a
         jr z,muslod8
-        pop af
+muslod9 pop af
         ld a,snderruse
         scf
         jp msgsnd0              ;error -> no music allowed
@@ -892,7 +1096,16 @@ musvol0 ld (musvols),a
 ;### Sends      CF=Error state (0=ok, 1=error; A=error code)
 ;###            - if CF is 0
 ;###            A=handle
-efxlod  call efxlod0
+efxlod  push af
+        ld a,(op4frm)
+        or a
+        jr z,efxlodc
+        pop af
+        ld a,snderrocc
+        scf
+        jp msgsnd0              ;error -> no effects allowed (device occupied)
+efxlodc pop af
+        call efxlod0
         jp msgsnd0              ;send result message to process
 
 efxlod0 inc e:dec e
@@ -1191,7 +1404,8 @@ efxply6 pop de              ;a=channel, hl=channel record, ixl=handle, de=effect
         jp psgxpl
 
 ;hl=handle data record (sp)=id/volume, bc=prio,panning, ixl=handle
-efxply9 dec b                       ;*** OPL4
+efxply9 ds 2
+        dec b                       ;*** OPL4
         jr z,efxplyf
 
         pop de              ;e=effect ID
@@ -1350,6 +1564,61 @@ efxstp7 ld (hl),-1      ;mute channel
         ret
 
 
+;### RMTAMP -> sends volume to SymAmp, if existing
+;### Input      C=type (0=music, 1=effects)
+;### Destroyed  AF,BC,HL,IX,IY
+rmtamp  dec c
+        ret z
+        push de
+        call prgamp1        ;zf=1 -> h=process id
+        jr nz,rmtamp0
+        ld de,256*1+"R"
+        ld (App_MsgBuf+0),de    ;"R", 1=volume
+        ld a,(cfgmusvol)
+        ld (App_MsgBuf+2),a
+        ld a,h
+        call msgsnd4
+rmtamp0 pop de
+        ret
+
+;### RMTCTR -> remote control
+;### Input      A=type (1=set effect master volume, 2=set music master volume), L=new volume
+;### Sends      (empty message)
+rmtctr  cp 2
+        ld a,l
+        ld ix,genctrsfx     ;effect volume
+        ld iy,trymendat1
+        ld hl,cfgefxvol
+        ld bc,256*3+1
+        ld de,256*09+256-2
+        jr c,rmtctr1
+        jr nz,rmtctr0
+        ld ix,genctrsms     ;music volume
+        ld iy,trymendat2
+        ld hl,cfgmusvol
+        ld bc,256*6+0
+        ld de,256*14+256-2
+rmtctr1 cpl
+        ld (ix+2),a
+        or a
+        push de
+        push bc
+        push iy
+        call setxvl5    ;(ix+2)=slider, (ix+8)=mute, (hl)=volume -> set volume, mute from slider
+        pop iy
+        call setxvl4
+        pop bc
+        ld a,(mixwin_id)
+        cp -1
+        ld e,b
+        call nz,SyDesktop_WINDIN
+        pop de
+        ld a,(stawinvis)
+        or a
+        ld a,(stawin_id)
+        call nz,SyDesktop_WINDIN
+rmtctr0 jp msgsnd1
+
 ;### RMTACT -> activate remote playing
 ;### Input      -
 ;### Sends      A=Bank (1-15), HL=routine address, BC=stack
@@ -1370,31 +1639,67 @@ rmtdct  ld hl,prgtims           ;starts timer again
         ret
 
 ;### RMTPLY -> plays one remote frame
-rmtply  call psgfrm
+rmtply  call psgfrm     ;##!!## opl4??
         jp jmp_bnkret
 
 
-;### SNDCOP -> cooperation with SymAmp
+;### SNDCOO -> cooperation with SymAmp/3rd party sound players
 ;### Input      A=type (0 -> ask for PSG usage, 1 -> ask for OPL4 usage, 16 -> release PSG usage, 17 -> release OPL4 usage)
-;### Sends      (only for 0 and 1)
-;###            CF = status (0=ok, 1=device is currently occupied)
-;###            if ok -> DE,HL=OPL4 ram start address, A=number of total 64K blocks
-sndcop  cp 16
-        jr nc,sndrel
+;### Sends      CF = status (0=ok, 1=device is currently occupied)
+;###            if OPL4 and ok -> DE,HL=OPL4 ram start address, A=number of total 64K blocks
+sndcoo  cp 16
+        jr nc,sndcoo4
         cp 1
-        jr z,sndcop1
-        ;mute psg and disable psg music/effect play
+        jr z,sndcoo2
+        ld a,#c9                ;** 00 -> ask for psg usage
+sndcoo1 ld (psgfrm),a       ;stop psg handling
+        di
+        call psgstp0        ;mute psg
         or a
         jp msgsnd0
-sndcop1 ;...check if opl4 music/effects loaded -> cf=1 yes
-        jp c,msgsnd0
-        ;mute opl4 and disable opl4 music play
-        ld a,(opl4bank)
-        ;de,hl=first ram
-        or a
+if PLATFORM_OPL4
+sndcoo2 ld a,(mussta)           ;** 01 -> ask for opl4 usage
+        cp 2
+        ccf
+        jp c,msgsnd0        ;opl4 music loaded -> cancel
+        ld hl,efxhndmem+efxhndlen
+        ld b,efxhndmax-1
+        ld de,efxhndlen
+        ld a,2
+sndcoo6 cp (hl)
+        scf
+        jp z,msgsnd0        ;opl4 effects loaded -> cancel
+        add hl,de
+        djnz sndcoo6
+        ld a,#c9
+        db #21:pop hl:ret
+        call sndcoo5        ;stop opl4 handling/loading
+        ld hl,opl4_load     ;switch opl4 to load mode
+        call op4set
+        ld hl,(smppag)      ;hl=reserved 256b pages
+        ld d,0
+        ld e,h
+        ld h,l
+        ld l,0              ;de,hl=pages*256=first free opl4 ram
+        ld a,(op4_64kbnk)
+sndcoo3 or a
+        jp msgsnd3
+sndcoo4 ld a,#00
+        jr z,sndcoo1            ;** 16 -> release psg usage
+        ld l,a
+        ld h,a
+        call sndcoo5            ;** 17 -> release opl4 handling
+        call op4res         ;reenable wav (if fm was in use)
+        jr sndcoo3
+sndcoo5 ld (op4frm),a       ;stop/cont opl4 handling
+        ld (efxply9),hl     ;no effect play
+        jp mt_stop0         ;mute opl4
+else
+sndcoo2 scf
         jp msgsnd0
-sndrel  ;...reactivate opl4/psg
-        jp msgsnd0
+sndcoo4 xor a               ;no opl4 -> release can only happen to psg
+        jr sndcoo1
+endif
 
 
 ;==============================================================================
@@ -1404,9 +1709,10 @@ sndrel  ;...reactivate opl4/psg
 ;### MSGCMD -> execute sound command
 ;### Input      (sndprcnum)=process ID, (App_MsgBuf)=data
 ;### Output     [process receives answer]
+;### Returns    with RET
 ;### Destroyed  AF,BC,DE,HL,IX,IY
 msgcmdtab
-dw 000000,sndinf,000000,sndcop,000000,000000,rmtact,rmtdct  ;general (00-07)
+dw 000000,sndini,000000,sndcoo,000000,rmtctr,rmtact,rmtdct  ;general (00-07)
 dw muslod,musfre,musrst,muscon,musstp,musvol,000000,000000  ;music   (08-15)
 dw efxlod,efxfre,efxply,efxstp,000000,000000,000000         ;effects (16-22, 23=efxevt)
 
@@ -1442,18 +1748,18 @@ msgcmd1 jp 0
 ;###            AF[,HL[,BC,DE]]=registers
 ;### Destroyed  AF,BC,DE,HL,IX,IY
 msgsnd2 ld (App_MsgBuf+04),bc
-        ld (App_MsgBuf+06),de
+msgsnd3 ld (App_MsgBuf+06),de
 msgsnd  ld (App_MsgBuf+08),hl
 msgsnd0 push af
         pop hl
         ld (App_MsgBuf+02),hl
 msgsnd1 ld a,0
         ld (App_MsgBuf+00),a
+        ld a,(sndprcnum)
+msgsnd4 db #dd:ld h,a
         ld iy,App_MsgBuf
         ld a,(App_PrcID)
         db #dd:ld l,a
-        ld a,(sndprcnum)
-        db #dd:ld h,a
         rst #10
         ret
 
@@ -1481,7 +1787,13 @@ setdvc1 ld a,(ix+02):and 63:or l:ld (ix+02),a
         ret
 
 ;### Effect mute
-setxmt  ld ix,genctrsfx
+setxmt0 ld a,(genctrmfx)    ;per menu
+        xor 1
+        ld (genctrmfx),a
+        ld e,9
+        call memupd5
+setxmt  ld ix,genctrsfx     ;per main window
+        ld iy,trymendat1
         ld hl,cfgefxvol
         ld c,1
         ld e,10
@@ -1490,13 +1802,22 @@ setxmt1 ld a,(ix+8)
         sbc a
         ld (hl),a
         scf
+        push bc
         call cfgvol
+        pop bc
         cpl
         ld (ix+2),a
-        jr setxvl2
+        call setxvl4
+        jr setxvl6
 
 ;### Music mute
-setmmt  ld ix,genctrsms
+setmmt0 ld a,(genctrmms)    ;per menu
+        xor 1
+        ld (genctrmms),a
+        ld e,14
+        call memupd5
+setmmt  ld ix,genctrsms     ;per main window
+        ld iy,trymendat2
         ld hl,cfgmusvol
         ld c,0
         ld e,15
@@ -1504,28 +1825,47 @@ setmmt  ld ix,genctrsms
 
 ;### Effect volume
 setxvl  ld ix,genctrsfx
+        ld iy,trymendat1
         ld hl,cfgefxvol
         ld c,1
         ld e,9
-setxvl1 ld a,(ix+2)
+setxvl1 push bc
+        call setxvl3
+        call setxvl4
+        pop bc
+setxvl6 call rmtamp
+        ld a,(stawinvis)
+        or a
+        jp z,prgprz0
+setxvl2 ld a,(stawin_id)
+        call SyDesktop_WINDIN
+        jp prgprz0
+;(ix+2)=slider, (ix+8)=mute, (hl)=volume -> set volume, mute from slider
+setxvl3 scf
+setxvl5 ld a,(ix+2)
         cpl
         ld (hl),a
-        scf
-        call cfgvol
+        call cfgvol         ;A=volume (0-255), C=type (0=music, 1=effect), CF=1 -> play test beep, if effect table
         sub 1   ;mute -> cf=1
         sbc a   ;mute -> a=255
         neg     ;mute -> a=1
         ld (ix+8),a
-setxvl2 ld a,(stawin_id)
-        call SyDesktop_WININH
-        jp prgprz0
+        ret
+;(ix+8)=mute, (iy+0)=menu -> set menu from mute
+setxvl4 ld a,(ix+8)
+        add a
+        inc a
+        ld (iy+0),a
+        ret
 
 ;### Music volume
 setmvl  ld ix,genctrsms
+        ld iy,trymendat2
         ld hl,cfgmusvol
         ld c,0
         ld e,14
         jr setxvl1
+
 
 ;### Event selected
 setevt  ld hl,(sysctrevt+12)
@@ -1897,6 +2237,21 @@ cfgini1 ld hl,snddatmem
         ld bc,16
         add hl,bc
         ld (patadr6+1),hl
+
+        ld a,(cfgflgwel)            ;** load wave-welcome at first to play it faster
+        or a
+        jr z,cfgsnd
+        ld a,(cfgdvcprf)
+        ld (welbegh+1),a
+        or a
+        jr z,cfgsnd
+        call welbeg1
+        ld a,50*5
+cgfini2 rst #30
+        dec a
+        jr nz,cgfini2
+        ld a,(welbegh)
+        call efxfrex
 ;### CFGSND -> load system sound effects
 cfgsnd  ld a,(cfgdvcprf)
         or a
@@ -2142,8 +2497,8 @@ memupd4 ld ix,musdatsiz+efxdatsiz   ;*** CPU
         ld a,(stactrtba0)
         cp 3
         ret nz
-        ld a,(stawin_id)
         ld de,256*11+256-6
+memupd5 ld a,(stawin_id)
         jp SyDesktop_WINDIN
 
 ;### MEMSMP -> calculate total sample length
@@ -2631,6 +2986,15 @@ elseif PLATFORM_TYPE=PLATFORM_ZNX
 endif
 prgmsgwpf3 db "Please replace SOUNDD.EXE .",0
 
+;### SymAmp
+prgmsgam11  db "Please quit SymAmp first!",0
+prgmsgam12  db "Then you can start the Sound",0
+prgmsgam13  db "Daemon and run SymAmp again.",0
+prgmsgam21  equ prgmsgam11
+prgmsgam22  db "Then you can quit the",0
+prgmsgam23  db "Sound Daemon as well.",0
+
+
 prgmsgshm1  db "Are you sure you want to",0
 prgmsgshm2  db "reset the current sound",0
 prgmsgshm3  db "scheme?",0
@@ -2639,6 +3003,13 @@ prgmsgmmu2  db "clean-up all loaded",0
 prgmsgmmu3  db "music?",0
 
 prgmsgmfx3  db "effects?",0
+
+;### systray menu
+trymentxt1  db "Open mixer...",0
+trymentxt2  db "Open sound settings...",0
+trymentxt3  db "Mute effects",0
+trymentxt4  db "Mute music",0
+trymentxt5  db "Quite Sound Daemon",0
 
 ;### status text data
 stamentxt1  db "File",0
@@ -2659,6 +3030,9 @@ statxttba3  db "Settings",0
 statxttba4  db "Stats",0
 
 ;### general
+gentxtoky   db "Ok",0
+gentxtset   db "Settings...",0
+
 gentxtvct   db "Volume control",0
 gentxtmut   db "Mute",0
 
@@ -2756,6 +3130,16 @@ systxts20   db "Lose",0
 systxts21   db "Win",0
 ;asterisk, message
 
+volmentxtv  db "Volume",0
+volmentxt8  db "|||||||| max",0
+volmentxt7  db "|||||||",0
+volmentxt6  db "||||||",0
+volmentxt5  db "|||||",0
+volmentxt4  db "||||",0
+volmentxt3  db "|||",0
+volmentxt2  db "||",0
+volmentxt1  db "|      min",0
+
 ;### settings
 settxtchn   db "PSG effect channel",0
 settxtch0   db "use all",0
@@ -2826,7 +3210,7 @@ cfgpsgxpc   db 1    ;psg preferred effect channel (0-2)
 cfgfilpsg   ds 128
 cfgfilwav   ds 128
 
-cfgdvcprf   db 0    ;preferred output device (0=psg, 1=opl4)
+cfgdvcprf   db 1    ;preferred output device (0=psg, 1=opl4)
 cfgefxvol   db 255  ;effect volume (0-255)
 cfgmusvol   db 255  ;music  volume (0-255)
 
@@ -2850,6 +3234,35 @@ prgmsgshm  dw prgmsgshm1,4*1+2,prgmsgshm2,4*1+2,prgmsgshm3,4*1+2
 prgmsgmmu  dw prgmsgshm1,4*1+2,prgmsgmmu2,4*1+2,prgmsgmmu3,4*1+2
 prgmsgmfx  dw prgmsgshm1,4*1+2,prgmsgmmu2,4*1+2,prgmsgmfx3,4*1+2
 prgmsgwpf  dw prgmsgwpf1,4*1+2,prgmsgwpf2,4*1+2,prgmsgwpf3,4*1+2
+prgmsgam1  dw prgmsgam11,4*1+2,prgmsgam12,4*1+2,prgmsgam13,4*1+2
+prgmsgam2  dw prgmsgam21,4*1+2,prgmsgam22,4*1+2,prgmsgam23,4*1+2
+
+
+;### systray mixer window/menu data
+mixwinxln   equ 98
+mixwinyln   equ 54
+
+trymendat   dw 7
+            dw 1,trymentxt1, prgtrym, 0
+            dw 1,trymentxt2, prgtrys, 0
+            dw 8,0,0,0
+trymendat1  dw 1,trymentxt3, setxmt0, 0
+trymendat2  dw 1,trymentxt4, setmmt0, 0
+            dw 8,0,0,0
+            dw 1,trymentxt5, prgend,  0
+
+mixwindat   dw #0501,4,56,26,mixwinxln,mixwinyln,0,0,mixwinxln,mixwinyln,mixwinxln,mixwinyln,mixwinxln,mixwinyln,0,0,0,0,mixwingrp,0,0:ds 136+14
+mixwingrp   db 9,0:dw mixwinrec,0,0,4*256+3,0,0,2
+mixwinrec
+dw      0,  255*256+ 0,         2,     0,     0, 10000, 10000, 0    ;00=background
+dw      0,  255*256+10, gfxsnd   ,     2,     2,    16,    16, 0    ;01=effects icon
+dw      0,  255*256+10, gfxvol   ,    28,     3,    60,     5, 0    ;02=effects volgfx
+dw setxvl,  255*256+24, genctrsfx,    20,    10,    76,     8, 0    ;03=effects slider
+dw      0,  255*256+10, gfxmus   ,     2,    22,    16,    16, 0    ;04=music   icon
+dw      0,  255*256+10, gfxvol   ,    28,    23,    60,     5, 0    ;05=music   volgfx
+dw setmvl,  255*256+24, genctrsms,    20,    30,    76,     8, 0    ;06=music   slider
+dw prgtry3, 255*256+16, gentxtoky,     2,    40,    32,    12, 0    ;07=button "ok"
+dw prgtrys, 255*256+16, gentxtset,    36,    40,    60,    12, 0    ;08=button "seetings"
 
 
 ;### status window data
@@ -2866,17 +3279,6 @@ stamendat1a dw    1,stamentxt12,cfghid,0,   1+8,#0000,0,0, 1,stamentxt13,prgend,
 stamendat2  dw 3, 1,stamentxt21,prghlp,0,   1+8,#0000,0,0, 1,stamentxt22,prginf,0    ;index/-/about
 
 volmendat   dw 9, 0,volmentxtv,0,0, 1,volmentxt8,255,0, 1,volmentxt7,224,0, 1,volmentxt6,192,0, 1,volmentxt5,160,0, 1,volmentxt4,128,0, 1,volmentxt3,096,0, 1,volmentxt2,064,0, 1,volmentxt1,032,0
-
-volmentxtv  db "Volume",0
-volmentxt8  db "|||||||| max",0
-volmentxt7  db "|||||||",0
-volmentxt6  db "||||||",0
-volmentxt5  db "|||||",0
-volmentxt4  db "||||",0
-volmentxt3  db "|||",0
-volmentxt2  db "||",0
-volmentxt1  db "|      min",0
-
 
 stawindata                                                              ;*** GENERAL
 ; onclick         type   property   xpos   ypos   xlen   ylen
@@ -2944,7 +3346,6 @@ dw      0,  255*256+17, setctrmof,     4,    81,    60,     8, 0    ;15=disable 
 dw      0,  255*256+ 1, stactrdrv,     3,   113,   112,     8, 0    ;16=driver description
 dw staapl,  255*256+16, statxtbtb,    95,   111,    36,    12, 0    ;17=button apply
 dw stahid,  255*256+16, statxtbta,   133,   111,    36,    12, 0    ;18=button hide
-
 
 
 stawindatd                                                              ;*** STATS

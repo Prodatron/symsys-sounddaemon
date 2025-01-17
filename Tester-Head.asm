@@ -4,8 +4,8 @@ org #1000
 
 tstver equ 1
 
-WRITE "f:\symbos\-sndt.exe"
-READ "..\..\..\..\SVN-Main\trunk\SymbOS-Constants.asm"
+WRITE "f:\symbos\soundt.exe"
+READ "..\..\..\SRC-Main\SymbOS-Constants.asm"
 
 relocate_start
 
@@ -151,10 +151,10 @@ use_SySound_EFXPLY      equ 1   ;starts playing an effect
 use_SySound_EFXSTP      equ 1   ;stop effects
 
 
-READ "..\..\..\..\SVN-Main\trunk\Docs-Developer\symbos_lib-SystemManager.asm"
-READ "..\..\..\..\SVN-Main\trunk\Docs-Developer\symbos_lib-DesktopManager.asm"
-READ "..\..\..\..\SVN-Main\trunk\Docs-Developer\symbos_lib-FileManager.asm"
-READ "..\..\..\..\SVN-Main\trunk\Docs-Developer\symbos_lib-SoundDaemon.asm"
+READ "..\..\..\SRC-Main\Docs-Developer\symbos_lib-SystemManager.asm"
+READ "..\..\..\SRC-Main\Docs-Developer\symbos_lib-DesktopManager.asm"
+READ "..\..\..\SRC-Main\Docs-Developer\symbos_lib-FileManager.asm"
+READ "..\..\..\SRC-Main\Docs-Developer\symbos_lib-SoundDaemon.asm"
 READ "Tester.asm"
 
 App_EndTrns

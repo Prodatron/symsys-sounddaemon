@@ -162,6 +162,33 @@ clcr163 sbc hl,bc
         or a
         ret
 
+;### STRLEN -> get string length
+;### Input      HL=String (0-terminated)
+;### Output     HL=Stringend (0), BC=length (max 255, without 0-terminator)
+;### Destroyed  -
+strlen  push af
+        xor a
+        ld bc,255
+        cpir
+        ld a,254
+        sub c
+        ld c,a
+        dec hl
+        pop af
+        ret
+
+;### STRINI -> inits string input control
+;### Input      IX=control
+;### Destroyed  BC,HL
+strini  ld l,(ix+0)
+        ld h,(ix+1)
+        call strlen
+strini1 ld (ix+8),c
+        ld (ix+4),c
+        ld (ix+2),b
+        ld (ix+6),b
+        ret
+
 ;### FILBRW -> browse file
 ;### Input      HL=path, D=music"M"/effect"X", A=type (0=psg, 1=opl4)
 filbrw  dec a
@@ -177,14 +204,13 @@ filbrw1 ld (cfgbrwpth+1),de
         ld b,0
         call filbrw0
         pop de
-        jp nz,prgprz0
+        ret nz
         ld hl,cfgbrwpth+4
         ld bc,128
         ldir
         ld e,3
 filbrw2 ld a,(stawin_id)
-        call SyDesktop_WININH
-        jp prgprz0
+        jp SyDesktop_WININH
 filbrw0 ld a,(App_BnkNum)
         add b
         ld c,8
@@ -213,14 +239,20 @@ mushnd  db -1
 efxhnd  db -1
 
 musbrw  ld hl,cfgmusfil
+        ld ix,musctrinp
         ld d,"M"
         ld a,(cfgmustyp)
-        jr filbrw
+        jr efxbrw1
 
 efxbrw  ld hl,cfgefxfil
+        ld ix,efxctrinp
         ld d,"X"
         ld a,(cfgefxtyp)
-        jr filbrw
+efxbrw1 push ix
+        call filbrw
+        pop ix
+        call strini
+        jp prgprz0
 
 ;### MUSLOD -> loads music
 muslod  ld a,(mushnd)
@@ -246,7 +278,8 @@ muslod  ld a,(mushnd)
         ld de,mustxthnd+1
         call clchex
 muslod4 ld e,7
-        jp filbrw2
+        call filbrw2
+        jp prgprz0
 muslod1 ld a,b              ;error while loading
         call SyFile_FILCLO
         ld hl,prgerrlod
@@ -329,7 +362,8 @@ efxtp0  ld (efxctrpri+4),hl
         xor a
         ld (efxctrpri+12),a
         ld e,22
-        jp filbrw2
+        call filbrw2
+        jp prgprz0
 
 ;### Music Control
 musrst  ld ix,cfgmusnum
