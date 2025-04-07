@@ -144,6 +144,23 @@ elseif PLATFORM_TYPE=PLATFORM_ZNX
     PLATFORM_OPL4 equ 0
 endif
 
+P_PSG1SEL   equ #A0
+P_PSG1DAT   equ #A1
+P_PSG1CTRL  equ #A2
+P_PSG2SEL   equ #A3
+P_PSG2DAT   equ #A4
+P_PSG2CTRL  equ #A5
+
+D_PSGMONO   equ #00
+D_PSGSABC   equ #10
+D_PSGSACB   equ #20
+
+D_PSGOFF    equ #00
+D_PSGCCPC   equ #01
+D_PSGCZX    equ #02
+D_PSGCMSX   equ #03
+D_PSGCST    equ #04
+
 
 
 ;==============================================================================
@@ -222,7 +239,7 @@ prgprz2 ld a,(App_MsgBuf+0)     ;*** message from desktop manager
         cp DSK_ACT_KEY
         jr z,prgkey
         cp DSK_ACT_CLOSE
-        jr z,prgend
+        jp z,stahid
         cp DSK_ACT_MENU
         jr z,prgprz1
         cp DSK_ACT_CONTENT
@@ -576,9 +593,16 @@ dskoff  ld e,0
 
 dvcsta  db 0    ;+1=PSG available, +2=OPL4 available
 
-;### DVCDET -> detects available sound devices
+;### DVCDET -> detects and optionally initializes available sound devices
 ;### Output     (dvcsta) set
-dvcdet  call op4det
+dvcdet  
+if PLATFORM_TYPE=PLATFORM_SVM
+        ld a,D_PSGCCPC+D_PSGSABC
+        out (P_PSG1CTRL),a
+        ld a,D_PSGOFF
+        out (P_PSG2CTRL),a
+endif
+        call op4det
         ld a,1
         jr c,dvcdet1
         ld hl,(op4_64kbnk-1)
@@ -1631,7 +1655,9 @@ rmtact  ld a,(prgprztab+0)      ;removes timer
         jp msgsnd2              ;return routine information
 
 ;### RMTDCT -> deactivates remote playing
-rmtdct  ld hl,prgtims           ;starts timer again
+rmtdct  ld hl,prgtim            ;init stack
+        ld (6*2+prgtims),hl
+        ld hl,prgtims           ;starts timer (again)
         ld a,(App_BnkNum)
         call SyKernel_MTADDT
         jp c,prgend1
@@ -1640,6 +1666,7 @@ rmtdct  ld hl,prgtims           ;starts timer again
 
 ;### RMTPLY -> plays one remote frame
 rmtply  call psgfrm     ;##!!## opl4??
+        call op4frm
         jp jmp_bnkret
 
 
@@ -1855,6 +1882,7 @@ setxvl5 ld a,(ix+2)
 setxvl4 ld a,(ix+8)
         add a
         inc a
+        add 16
         ld (iy+0),a
         ret
 
@@ -2187,9 +2215,7 @@ cfgsav1 push bc
 
 ;### CFGINI -> prepare config settings
 cfgini  ld a,(cfgflghid)            ;hide on startup
-        add a
-        inc a
-        ld (stamendat1a),a
+        call cfghid1
         ld a,(cfgdvcprf)            ;preferred device
         ld (genctrdls+12),a
         call setdvc0
@@ -2284,13 +2310,17 @@ cfgrel  xor a
         jp prgprz0
 
 ;### CFGHID -> hide on start up on/off
-cfghid  ld hl,stamendat1a
+cfghid  ld hl,cfgflghid
         ld a,(hl)
-        xor 2
+        xor 1
         ld (hl),a
-        srl a
-        ld (cfgflghid),a
+        call cfghid1
         jp prgprz0
+cfghid1 add a
+        inc a
+        add 16
+        ld (stamendat1a),a
+        ret
 
 ;### CFGVOL -> calculates volume lookup table
 ;### Input      A=volume (0-255), C=type (0=music, 1=effect), CF=1 -> play test beep, if effect table
@@ -2538,36 +2568,36 @@ memsmp1 ld c,(hl)
 ;00000000 00000000           EOF
 
 psgrel  ld a,h
-        ld ixh,a
-psgrel0 ld e,(hl)       ;ixh=highbyte-dif
+        ld ixh,a            ;ixh=new highbyte (=difference to 0-address; only high byte has to be relocated)
+psgrel0 ld e,(hl)           ;(HL)=AK data length
         inc hl
-        ld d,(hl)
+        ld d,(hl)           ;DE=AK data length
         inc hl
+        inc hl              ;(HL)=relocate table length
         inc hl
-        inc hl
-        ex de,hl
-        add hl,de
-psgrel1 ld a,(hl)
+        ex de,hl            ;DE=AK data
+        add hl,de           ;HL=relocator table
+psgrel1 ld a,(hl)       ;** get next byte
         inc hl
         sub 128
         jr c,psgrel5
-        ld c,a
-        ld ixl,1
+        ld c,a              ;1xxxxxxx -> skip x bytes and relocate 1 word
+        ld ixl,1            ;c=bytes to skip, ixl=number to relocate
 psgrel2 ld b,0
         ex de,hl
         add hl,bc
-        ex de,hl
+        ex de,hl            ;de=data behind skipped bytes
         inc ixl
         jr psgrel4
-psgrel3 inc de
+psgrel3 inc de              ;relocate high byte only
         ld a,(de)
         add ixh
         ld (de),a
-        inc de
+        inc de              ;de=next word
 psgrel4 dec ixl
         jr nz,psgrel3
         jr psgrel1
-psgrel5 add 128
+psgrel5 add 128             ;0xxxxxxx yyyyyyyy -> skip x bytes and relocate y words (if x,y=0 -> eof)
         ld c,a
         ld a,(hl)
         inc hl
@@ -2962,10 +2992,10 @@ db #61,#11,#11,#11,#11,#11,#68,#88
 
 ;### info
 prgmsginf1  db "SymbOS Sound Daemon",0
-prgmsginf2  db " Version 1.0 (Build "
+prgmsginf2  db " Version 1.1 (Build "
 read "..\..\..\SRC-Main\build.asm"
             db "pdt)",0
-prgmsginf3  db " <c> 2024 SymbiosiS/Arkos/NOP",0
+prgmsginf3  db " <c> 2025 SymbiosiS/Arkos/NOP",0
 
 prgmsgwpf1 db "Wrong platform! This Sound Daemon",0
 prgmsgwpf2 db "is for the "
@@ -3005,21 +3035,33 @@ prgmsgmmu3  db "music?",0
 prgmsgmfx3  db "effects?",0
 
 ;### systray menu
-trymentxt1  db "Open mixer...",0
-trymentxt2  db "Open sound settings...",0
-trymentxt3  db "Mute effects",0
-trymentxt4  db "Mute music",0
-trymentxt5  db "Quite Sound Daemon",0
+trymentxt1  db 6,128,-1:dw menicn_mixer       +1:db " Open mixer...",0
+trymentxt2  db 6,128,-1:dw menicn_settings    +1:db " Open sound settings...",0
+trymentxt3  db 6,128,-1:dw menicn_muteefx     +1:db " Mute effects",0
+trymentxt4  db 6,128,-1:dw menicn_mutemus     +1:db " Mute music",0
+trymentxt5  db 6,128,-1:dw menicn_quit        +1:db " Quit Sound Daemon",0
 
-;### status text data
+menicn_mixer        db 4,8,7:dw $+7,$+4,28:db 5: db #00,#10,#01,#00, #00,#10,#01,#00, #07,#77,#01,#00, #00,#10,#01,#00, #00,#10,#77,#70, #00,#10,#01,#00, #00,#10,#01,#00
+menicn_settings     db 4,8,7:dw $+7,$+4,28:db 5: db #66,#6c,#66,#66, #6c,#6c,#6c,#66, #6f,#cd,#cf,#66, #cc,#c1,#cc,#c6, #ff,#cc,#cf,#f6, #6c,#fc,#fc,#66, #6f,#6c,#6f,#66
+menicn_muteefx      db 4,8,7:dw $+7,$+4,28:db 5: db #66,#61,#16,#66, #66,#18,#16,#66, #11,#8e,#13,#63, #18,#ee,#16,#36, #11,#ee,#13,#63, #66,#1e,#16,#66, #66,#61,#16,#66
+menicn_mutemus      db 4,8,7:dw $+7,$+4,28:db 5: db #66,#61,#11,#66, #66,#61,#11,#16, #66,#61,#61,#16, #61,#11,#66,#66, #18,#81,#63,#63, #1e,#e1,#66,#36, #61,#16,#63,#63
+
+;### status menu text
 stamentxt1  db "File",0
 stamentxt2  db "?",0
-stamentxt11 db "Save settings",0
-stamentxt12 db "Hide on startup",0
-stamentxt13 db "Quit",0
-stamentxt21 db "Index",0
-stamentxt22 db "About",0
+stamentxt11 db 6,128,-1:dw menicn_filesave    +1:db " Save settings",0
+stamentxt12 db 6,128,-1:dw menicn_hide        +1:db " Hide on startup",0
+stamentxt13 db 6,128,-1:dw menicn_quit        +1:db " Quit",0
+stamentxt21 db 6,128,-1:dw menicn_help        +1:db " Help topics",0
+stamentxt22 db 6,128,-1:dw menicn_about       +1:db " About",0
 
+menicn_filesave     db 4,8,7:dw $+7,$+4,28:db 5: db #11,#11,#11,#11, #1f,#ee,#ee,#f1, #1f,#ee,#ee,#f1, #1f,#ff,#ff,#f1, #1f,#11,#c1,#f1, #1f,#11,#c1,#f1, #61,#11,#11,#11
+menicn_hide         db 4,8,7:dw $+7,$+4,28:db 5: db #66,#11,#11,#66, #66,#18,#81,#66, #11,#18,#81,#11, #61,#88,#88,#16, #66,#18,#81,#66, #77,#71,#17,#77, #77,#77,#77,#77
+menicn_quit         db 4,8,7:dw $+7,$+4,28:db 5: db #ff,#66,#66,#ff, #6f,#f6,#6f,#f6, #66,#ff,#ff,#66, #66,#6f,#f6,#66, #66,#ff,#ff,#66, #6f,#f6,#6f,#f6, #ff,#66,#66,#ff
+menicn_help         db 4,8,7:dw $+7,$+4,28:db 5: db #66,#1f,#f1,#66, #61,#fc,#cf,#16, #1f,#ff,#fc,#f1, #ff,#fc,#cc,#f1, #ff,#ff,#ff,#18, #1f,#cf,#f1,#81, #61,#ff,#18,#16
+menicn_about        db 4,8,7:dw $+7,$+4,28:db 5: db #66,#10,#07,#66, #66,#10,#07,#66, #66,#66,#66,#66, #61,#00,#07,#66, #66,#10,#07,#66, #66,#10,#07,#66, #61,#00,#00,#76
+
+;### status text data
 statxttit   db "Sound daemon",0
 statxtbta   db "Hide",0
 statxtbtb   db "Save",0
@@ -3243,16 +3285,16 @@ mixwinxln   equ 98
 mixwinyln   equ 54
 
 trymendat   dw 7
-            dw 1,trymentxt1, prgtrym, 0
-            dw 1,trymentxt2, prgtrys, 0
+            dw 17,trymentxt1, prgtrym, 0
+            dw 17,trymentxt2, prgtrys, 0
             dw 8,0,0,0
-trymendat1  dw 1,trymentxt3, setxmt0, 0
-trymendat2  dw 1,trymentxt4, setmmt0, 0
+trymendat1  dw 17,trymentxt3, setxmt0, 0
+trymendat2  dw 17,trymentxt4, setmmt0, 0
             dw 8,0,0,0
-            dw 1,trymentxt5, prgend,  0
+            dw 17,trymentxt5, prgend,  0
 
 mixwindat   dw #0501,4,56,26,mixwinxln,mixwinyln,0,0,mixwinxln,mixwinyln,mixwinxln,mixwinyln,mixwinxln,mixwinyln,0,0,0,0,mixwingrp,0,0:ds 136+14
-mixwingrp   db 9,0:dw mixwinrec,0,0,4*256+3,0,0,2
+mixwingrp   db 9,0:dw mixwinrec,0,0,8*256+9,0,0,7
 mixwinrec
 dw      0,  255*256+ 0,         2,     0,     0, 10000, 10000, 0    ;00=background
 dw      0,  255*256+10, gfxsnd   ,     2,     2,    16,    16, 0    ;01=effects icon
@@ -3268,15 +3310,15 @@ dw prgtrys, 255*256+16, gentxtset,    36,    40,    60,    12, 0    ;08=button "
 ;### status window data
 stawindat   dw #3501,0,56,26,172,126,0,0,172,126,172,126,172,126,prgicnsml,statxttit,0,stamendat
 stawindat0  dw stawingrpa,0,0:ds 136+14
-stawingrpa  db 19,0:dw stawindata,0,0,4*256+3,0,0,2
-stawingrpb  db 16,0:dw stawindatb,0,0,4*256+3,0,0,2
-stawingrpc  db 19,0:dw stawindatc,0,0,4*256+3,0,0,2
-stawingrpd  db 21,0:dw stawindatd,0,0,4*256+3,0,0,2
+stawingrpa  db 19,0:dw stawindata,0,0,19*256+18,0,0,2
+stawingrpb  db 16,0:dw stawindatb,0,0,16*256+15,0,0,2
+stawingrpc  db 19,0:dw stawindatc,0,0,19*256+18,0,0,2
+stawingrpd  db 21,0:dw stawindatd,0,0,21*256+00,0,0,2
 
 stamendat   dw 2, 1+4,stamentxt1,stamendat1,0,     1+4,stamentxt2,stamendat2,0
-stamendat1  dw 4, 1,stamentxt11,staapl,0
-stamendat1a dw    1,stamentxt12,cfghid,0,   1+8,#0000,0,0, 1,stamentxt13,prgend,0    ;save settings/hide to systray/-/quit
-stamendat2  dw 3, 1,stamentxt21,prghlp,0,   1+8,#0000,0,0, 1,stamentxt22,prginf,0    ;index/-/about
+stamendat1  dw 4, 17,stamentxt11,staapl,0
+stamendat1a dw    17,stamentxt12,cfghid,0,   1+8,#0000,0,0, 17,stamentxt13,prgend,0    ;save settings/hide to systray/-/quit
+stamendat2  dw 3, 17,stamentxt21,prghlp,0,   1+8,#0000,0,0, 17,stamentxt22,prginf,0    ;index/-/about
 
 volmendat   dw 9, 0,volmentxtv,0,0, 1,volmentxt8,255,0, 1,volmentxt7,224,0, 1,volmentxt6,192,0, 1,volmentxt5,160,0, 1,volmentxt4,128,0, 1,volmentxt3,096,0, 1,volmentxt2,064,0, 1,volmentxt1,032,0
 
@@ -3374,8 +3416,8 @@ dw      0,  255*256+ 1, stactrmof,   110,    69,    50,     8, 0    ;16=memory o
 dw memmus,  255*256+16, statxtmmu,     3,    87,    81,    12, 0    ;17=button clean-up music
 dw memefx,  255*256+16, statxtmfx,    88,    87,    81,    12, 0    ;18=button clean-up effects
 
-dw      0,  255*256+ 1, stactrdrv,     3,   113,   112,     8, 0    ;??=driver description
-dw stahid,  255*256+16, statxtbta,   133,   111,    36,    12, 0    ;??=button hide
+dw      0,  255*256+ 1, stactrdrv,     3,   113,   112,     8, 0    ;19=driver description
+dw stahid,  255*256+16, statxtbta,   133,   111,    36,    12, 0    ;20=button hide
 
 
 ;### General

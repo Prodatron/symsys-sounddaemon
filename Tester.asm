@@ -31,20 +31,28 @@ prgprz  call SySound_SNDINI         ;search and set Sound Daemon
         call SyDesktop_WINOPN
         ld (stawin_id),a
         jp c,prgend
-
-        ;call SySound_RMTACT
-        ;ld (rmtply+1),a
-        ;ld (rmtply1+2),hl
-        ;ld (rmtply2+2),bc
+if mode_remote=1
+        call SySound_RMTACT
+        ld (rmtply+1),a
+        ld (rmtply1+2),hl
+        ld (rmtply2+2),bc
+endif
 
 prgprz0 
-;rst #30
-;call rmtply
+
+if mode_remote=1
+        rst #30
+        call rmtply
+endif
 
         ld ix,(App_PrcID)           ;check for messages
         db #dd:ld h,-1
         ld iy,App_MsgBuf
-        rst #08     ;#18
+if mode_remote=1
+        rst #18
+else
+        rst #08
+endif
         db #dd:dec l
         jr nz,prgprz0
         ld a,(App_MsgBuf+0)
@@ -67,7 +75,16 @@ prgprz1 ld hl,(App_MsgBuf+8)
 
 ;### PRGEND -> End program
 prgend  
-;call SySound_RMTDCT
+
+if mode_remote=1
+        call SySound_RMTDCT
+endif
+        ld a,(mushnd)
+        cp -1
+        call nz,SySound_MUSFRE
+        ld a,(efxhnd)
+        cp -1
+        call nz,SySound_EFXFRE
 
         ld hl,(App_BegCode+prgpstnum)
         call SySystem_PRGEND

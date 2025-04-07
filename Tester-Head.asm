@@ -2,7 +2,7 @@ nolist
 
 org #1000
 
-tstver equ 1
+mode_remote equ 0
 
 WRITE "f:\symbos\soundt.exe"
 READ "..\..\..\SRC-Main\SymbOS-Constants.asm"

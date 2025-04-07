@@ -1132,26 +1132,25 @@ PLY_AKG_REST_A
 ld a,0
 
     ld bc,63104
-    ld e,192
+    ld de,192
     out (c),e
     exx
-    ld bc,62465
+    ld bc,62464
 PLY_AKG_PSGREG01_INSTR ld hl,0
-    db 237
-    db 113
+    out (c),c
     exx
-    db 237
-    db 113
+    out (c),d
     exx
     out (c),l
     exx
     out (c),c
     out (c),e
     exx
+
+    inc c
     out (c),c
     exx
-    db 237
-    db 113
+    out (c),d
     exx
     out (c),h
     exx
@@ -1162,8 +1161,7 @@ PLY_AKG_PSGREG23_INSTR ld hl,0
     inc c
     out (c),c
     exx
-    db 237
-    db 113
+    out (c),d
     exx
     out (c),l
     exx
@@ -1173,8 +1171,7 @@ PLY_AKG_PSGREG23_INSTR ld hl,0
     inc c
     out (c),c
     exx
-    db 237
-    db 113
+    out (c),d
     exx
     out (c),h
     exx
@@ -1185,8 +1182,7 @@ PLY_AKG_PSGREG45_INSTR ld hl,0
     inc c
     out (c),c
     exx
-    db 237
-    db 113
+    out (c),d
     exx
     out (c),l
     exx
@@ -1196,8 +1192,7 @@ PLY_AKG_PSGREG45_INSTR ld hl,0
     inc c
     out (c),c
     exx
-    db 237
-    db 113
+    out (c),d
     exx
     out (c),h
     exx
@@ -1210,8 +1205,7 @@ PLY_AKG_PSGREG6_8_INSTR ld hl,0
     inc c
     out (c),c
     exx
-    db 237
-    db 113
+    out (c),d
     exx
     out (c),l
     exx
@@ -1221,8 +1215,7 @@ PLY_AKG_PSGREG6_8_INSTR ld hl,0
     inc c
     out (c),c
     exx
-    db 237
-    db 113
+    out (c),d
     exx
     out (c),a
     exx
@@ -1232,8 +1225,7 @@ PLY_AKG_PSGREG6_8_INSTR ld hl,0
     inc c
     out (c),c
     exx
-    db 237
-    db 113
+    out (c),d
     exx
     out (c),h
     exx
@@ -1246,8 +1238,7 @@ PLY_AKG_PSGREG9_10_INSTR ld hl,0
     inc c
     out (c),c
     exx
-    db 237
-    db 113
+    out (c),d
     exx
     out (c),l
     exx
@@ -1257,8 +1248,7 @@ PLY_AKG_PSGREG9_10_INSTR ld hl,0
     inc c
     out (c),c
     exx
-    db 237
-    db 113
+    out (c),d
     exx
     out (c),h
     exx
@@ -1269,8 +1259,7 @@ PLY_AKG_PSGHARDWAREPERIOD_INSTR ld hl,0
     inc c
     out (c),c
     exx
-    db 237
-    db 113
+    out (c),d
     exx
     out (c),l
     exx
@@ -1280,8 +1269,7 @@ PLY_AKG_PSGHARDWAREPERIOD_INSTR ld hl,0
     inc c
     out (c),c
     exx
-    db 237
-    db 113
+    out (c),d
     exx
     out (c),h
     exx
@@ -1298,8 +1286,7 @@ PLY_AKG_PSGREG13_INSTR ld l,0
     inc c
     out (c),c
     exx
-    db 237
-    db 113
+    out (c),d
     exx
     out (c),a
     exx

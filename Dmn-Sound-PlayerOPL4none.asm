@@ -19,7 +19,8 @@ op4xpl
 op4min
 op4stp
 op4mpl
-op4frm  ret
+op4frm  db 0
+        ret
 
 channel     db 255
 op4_64kbnk  db 0

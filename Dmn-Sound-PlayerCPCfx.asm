@@ -90,27 +90,26 @@ ld b,a
 read"Dmn-Sound-VolEfx.asm"
 ld a,b
 
-    ld e,192
-    ld bc,63104
+    ld de,192       ;#00c0
+    ld bc,63104     ;#f680
     out (c),e
     exx
-    ld bc,62465
+    ld bc,62464     ;#f400
 PLY_SE_PSGREG01_INSTR ld hl,0
-    db 237
-    db 113
+    out (c),c
     exx
-    db 237
-    db 113
+    out (c),d
     exx
     out (c),l
     exx
     out (c),c
     out (c),e
     exx
+
+    inc c
     out (c),c
     exx
-    db 237
-    db 113
+    out (c),d
     exx
     out (c),h
     exx
@@ -119,21 +118,20 @@ PLY_SE_PSGREG01_INSTR ld hl,0
     exx
 PLY_SE_PSGREG23_INSTR ld hl,0
     inc c
-    out (c),c
+    out (c),c   ;out #f400,reg
     exx
-    db 237
-    db 113
+    out (c),d   ;out #f600,#00
     exx
-    out (c),l
+    out (c),l   ;out #f400,val
     exx
-    out (c),c
-    out (c),e
+    out (c),c   ;out #f600,#80
+    out (c),e   ;out #f600,#c0
     exx
+
     inc c
     out (c),c
     exx
-    db 237
-    db 113
+    out (c),d
     exx
     out (c),h
     exx
@@ -144,8 +142,7 @@ PLY_SE_PSGREG45_INSTR ld hl,0
     inc c
     out (c),c
     exx
-    db 237
-    db 113
+    out (c),d
     exx
     out (c),l
     exx
@@ -155,8 +152,7 @@ PLY_SE_PSGREG45_INSTR ld hl,0
     inc c
     out (c),c
     exx
-    db 237
-    db 113
+    out (c),d
     exx
     out (c),h
     exx
@@ -169,8 +165,7 @@ PLY_SE_PSGREG6_8_INSTR ld hl,0
     inc c
     out (c),c
     exx
-    db 237
-    db 113
+    out (c),d
     exx
     out (c),l
     exx
@@ -180,8 +175,7 @@ PLY_SE_PSGREG6_8_INSTR ld hl,0
     inc c
     out (c),c
     exx
-    db 237
-    db 113
+    out (c),d
     exx
     out (c),a
     exx
@@ -191,8 +185,7 @@ PLY_SE_PSGREG6_8_INSTR ld hl,0
     inc c
     out (c),c
     exx
-    db 237
-    db 113
+    out (c),d
     exx
     out (c),h
     exx
@@ -205,8 +198,7 @@ PLY_SE_PSGREG9_10_INSTR ld hl,0
     inc c
     out (c),c
     exx
-    db 237
-    db 113
+    out (c),d
     exx
     out (c),l
     exx
@@ -216,8 +208,7 @@ PLY_SE_PSGREG9_10_INSTR ld hl,0
     inc c
     out (c),c
     exx
-    db 237
-    db 113
+    out (c),d
     exx
     out (c),h
     exx
@@ -228,8 +219,7 @@ PLY_SE_PSGHARDWAREPERIOD_INSTR ld hl,0
     inc c
     out (c),c
     exx
-    db 237
-    db 113
+    out (c),d
     exx
     out (c),l
     exx
@@ -239,8 +229,7 @@ PLY_SE_PSGHARDWAREPERIOD_INSTR ld hl,0
     inc c
     out (c),c
     exx
-    db 237
-    db 113
+    out (c),d
     exx
     out (c),h
     exx
@@ -257,8 +246,7 @@ PLY_SE_PSGREG13_INSTR ld l,0
     inc c
     out (c),c
     exx
-    db 237
-    db 113
+    out (c),d
     exx
     out (c),a
     exx
