@@ -128,39 +128,28 @@ snderrdat   equ 7       ;wrong sound data in file
 
 snderrunk   equ 255     ;*unknown*
 
-    if PLATFORM_TYPE=PLATFORM_CPC
-    PLATFORM_OPL4 equ 1
-elseif PLATFORM_TYPE=PLATFORM_MSX
-    PLATFORM_OPL4 equ 1
-elseif PLATFORM_TYPE=PLATFORM_PCW
-    PLATFORM_OPL4 equ 0
-elseif PLATFORM_TYPE=PLATFORM_EPR
-    PLATFORM_OPL4 equ 1
-elseif PLATFORM_TYPE=PLATFORM_SVM
-    PLATFORM_OPL4 equ 0
-elseif PLATFORM_TYPE=PLATFORM_NCX
-    PLATFORM_OPL4 equ 0
-elseif PLATFORM_TYPE=PLATFORM_ZNX
-    PLATFORM_OPL4 equ 0
-endif
 
-P_PSG1SEL   equ #A0
-P_PSG1DAT   equ #A1
-P_PSG1CTRL  equ #A2
-P_PSG2SEL   equ #A3
-P_PSG2DAT   equ #A4
-P_PSG2CTRL  equ #A5
+;SymbOS VM - defs
+P_PSG1SEL       equ #A0
+P_PSG1DAT       equ #A1
+P_PSG1CTRL      equ #A2
+P_PSG2SEL       equ #A3
+P_PSG2DAT       equ #A4
+P_PSG2CTRL      equ #A5
 
-D_PSGMONO   equ #00
-D_PSGSABC   equ #10
-D_PSGSACB   equ #20
+D_PSGMONO       equ #00
+D_PSGSABC       equ #10
+D_PSGSACB       equ #20
 
-D_PSGOFF    equ #00
-D_PSGCCPC   equ #01
-D_PSGCZX    equ #02
-D_PSGCMSX   equ #03
-D_PSGCST    equ #04
+D_PSGOFF        equ #00
+D_PSGCCPC       equ #01
+D_PSGCZX        equ #02
+D_PSGCMSX       equ #03
+D_PSGCST        equ #04
 
+;Isetta TTL - defs
+PORT_PSG_REG    equ #40     ;to set the register number, 0x00 - 0x0D (14 registers)
+PORT_PSG_DATA   equ #41     ;to set the data in the selected register.
 
 
 ;==============================================================================
@@ -179,6 +168,7 @@ prgprz  call prgdbl                 ;check, if already running
         call prgamp
         jp z,prgend1
 
+        call dvcini
         call dvcdet
 
         ld a,(App_BnkNum)
@@ -200,7 +190,6 @@ prgprz3 call cfglod
         ld (PLY_SE_VOLLOOKUP+1),a
 
         call rmtdct                 ;Timer hinzufügen
-
         call welbeg                 ;start welcome music (only if PSG)
         call dskonl                 ;activate desktop sound effects
 
@@ -329,6 +318,10 @@ elseif PLATFORM_TYPE=PLATFORM_SVM   ;SVM -> 18 OK
         cp 18
         jr c,prgver1
         cp 18+1
+elseif PLATFORM_TYPE=PLATFORM_ISA   ;ISA -> 19 OK
+        cp 19
+        jr c,prgver1
+        cp 19+1
 elseif PLATFORM_TYPE=PLATFORM_NCX   ;NC  -> 15-17 OK
         cp 15
         jr c,prgver1
@@ -588,21 +581,16 @@ dskoff  ld e,0
 
 
 ;==============================================================================
-;### DEVICE DETECTION #########################################################
+;### DEVICE DETECTION AND INITIALISATION ######################################
 ;==============================================================================
+
+read "Dmn-Sound-Init.asm"
 
 dvcsta  db 0    ;+1=PSG available, +2=OPL4 available
 
 ;### DVCDET -> detects and optionally initializes available sound devices
 ;### Output     (dvcsta) set
-dvcdet  
-if PLATFORM_TYPE=PLATFORM_SVM
-        ld a,D_PSGCCPC+D_PSGSABC
-        out (P_PSG1CTRL),a
-        ld a,D_PSGOFF
-        out (P_PSG2CTRL),a
-endif
-        call op4det
+dvcdet  call op4det
         ld a,1
         jr c,dvcdet1
         ld hl,(op4_64kbnk-1)
@@ -3013,6 +3001,8 @@ elseif PLATFORM_TYPE=PLATFORM_NCX
                        db "AMSTRAD NC1x0/200.",0
 elseif PLATFORM_TYPE=PLATFORM_ZNX
                        db "ZX SPECTRUM NEXT.",0
+elseif PLATFORM_TYPE=PLATFORM_ISA
+                       db "ISETTA TTL.",0
 endif
 prgmsgwpf3 db "Please replace SOUNDD.EXE .",0
 
@@ -3090,6 +3080,8 @@ elseif PLATFORM_TYPE=PLATFORM_EPR
 db "Internal PSG (Dave)",0
 elseif PLATFORM_TYPE=PLATFORM_NCX
 db "Internal beepers",0
+elseif PLATFORM_TYPE=PLATFORM_ISA
+db "Microcode AY emulation",0
 else
 db "Internal PSG (AY)",0
 endif
@@ -3112,6 +3104,8 @@ elseif PLATFORM_TYPE=PLATFORM_NCX
 db "NCX driver 1.0",0
 elseif PLATFORM_TYPE=PLATFORM_ZNX
 db "ZNX driver 1.0",0
+elseif PLATFORM_TYPE=PLATFORM_ISA
+db "ISA driver 1.0",0
 endif
 
 ;### system sounds

@@ -2,7 +2,7 @@ nolist
 
 READ "..\..\..\SRC-Main\SymbOS-Constants.asm"
 
-PLATFORM_TYPE   equ PLATFORM_SVM
+PLATFORM_TYPE   equ PLATFORM_ISA
 OPL4EMU         equ 0               ;1=OPL4 emulation
 
 org #1000
@@ -21,6 +21,8 @@ elseif PLATFORM_TYPE=PLATFORM_NCX
     write "f:\symbos\nc\soundd.exe"
 elseif PLATFORM_TYPE=PLATFORM_ZNX
     write "f:\symbos\nxt\soundd.exe"
+elseif PLATFORM_TYPE=PLATFORM_ISA
+    write "f:\symbos\isa\soundd.exe"
 endif
 
 relocate_start
@@ -183,7 +185,7 @@ READ "Dmn-Sound-PlayerOPL4.asm"
 elseif PLATFORM_TYPE=PLATFORM_PCW
 READ "Dmn-Sound-PlayerPCW.asm"
 READ "Dmn-Sound-PlayerPCWfx.asm"
-READ "Dmn-Sound-PlayerOPL4none.asm"
+READ "Dmn-Sound-PlayerOPL4.asm"
 elseif PLATFORM_TYPE=PLATFORM_EPR
 READ "App-SymAmp-EP.asm"
 READ "Dmn-Sound-PlayerEPR.asm"
@@ -200,6 +202,10 @@ READ "Dmn-Sound-PlayerOPL4none.asm"
 elseif PLATFORM_TYPE=PLATFORM_ZNX
 READ "Dmn-Sound-PlayerZNX.asm"
 READ "Dmn-Sound-PlayerZNXfx.asm"
+READ "Dmn-Sound-PlayerOPL4none.asm"
+elseif PLATFORM_TYPE=PLATFORM_ISA
+READ "Dmn-Sound-PlayerISA.asm"
+READ "Dmn-Sound-PlayerISAfx.asm"
 READ "Dmn-Sound-PlayerOPL4none.asm"
 endif
 

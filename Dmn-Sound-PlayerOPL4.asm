@@ -88,16 +88,57 @@
 
 ;---
 
+PLATFORM_OPL4 equ 1
 
-MACRO   opl4_wt
+if PLATFORM_TYPE=PLATFORM_PCW   ;*** xxB0 port based (PCW)
+
+OPL4_P_REG    equ #7eb0
+OPL4_P_DATA   equ #7fb0
+
+OPL4_P_FM_C6  equ #c6b0
+OPL4_P_FM_C7  equ #c7b0
+
+macro   OPL4_M_IOINC
+        inc b
+mend
+macro   OPL4_M_IODEC
+        dec b
+mend
+
+macro   OPL4_M_WT
+        ld a,#c4    ;2
+        in a,(#b0)  ;3
+        and %11     ;2
+if OPL4EMU=0
+        jr nz,$-6   ;2 -> 9
+endif
+mend
+
+else                            ;*** FFxx port based (all other platforms)
+
+OPL4_P_REG    equ #ff7e
+OPL4_P_DATA   equ #ff7f
+
+OPL4_P_FM_C6  equ #ffc6
+OPL4_P_FM_C7  equ #ffc7
+
+macro   OPL4_M_IOINC
+        inc c
+mend
+macro   OPL4_M_IODEC
+        dec c
+mend
+
+macro   OPL4_M_WT
         ld a,#ff    ;2
         in a,(#c4)  ;3
         and %11     ;2
 if OPL4EMU=0
         jr nz,$-6   ;2 -> 9
 endif
-MEND
+mend
 
+endif
 
 
 ;==============================================================================
@@ -1617,14 +1658,14 @@ smplod4 pop hl
         ld a,snderrfil
         ret
 
-smplod5 ld bc,OPL4_REG  ;hl=source, de=length
+smplod5 ld bc,OPL4_P_REG  ;hl=source, de=length
         di
-        opl4_wt 
+        OPL4_M_WT 
         ld a,6          ;select data register
         out (c),a
-        inc c
+        OPL4_M_IOINC
 
-smplod6 opl4_wt         ;9  copy data to opl4 ram
+smplod6 OPL4_M_WT       ;9  copy data to opl4 ram
         ld a,(hl)       ;2
         out (c),a       ;4
         inc hl          ;2
@@ -1874,12 +1915,6 @@ vib_tab
 ;### OPL4 ROUTINES ############################################################
 ;==============================================================================
 
-OPL4_REG    equ #ff7e
-OPL4_DATA   equ #ff7f
-
-OPL4_FM_C6  equ #ffc6
-OPL4_FM_C7  equ #ffc7
-
 op4_64kbnk  db 0    ;number of 64k banks
 
 
@@ -1923,11 +1958,11 @@ elseif PLATFORM_TYPE=PLATFORM_ZNX   ;no OPL4 support on ZX Spectrum
 endif
 
         call op4res
-        ld bc,OPL4_REG
+        ld bc,OPL4_P_REG
         call op4det2
         ld a,2
         out (c),a
-        inc c
+        OPL4_M_IOINC
         call op4det2
         in a,(c)
         and #e0
@@ -1980,7 +2015,7 @@ op4det3 dec a
 
 ;### OP4MEM -> detects OPL4 wavetable memory
 ;### Output     A=number of 64K banks
-op4mem  ld bc,OPL4_REG
+op4mem  ld bc,OPL4_P_REG
         ld h,#02
         ld a,#01
         call op4mem5
@@ -2023,32 +2058,32 @@ op4mema add #20
 ;write A to memory
 op4memw ld h,6
 op4mem5 ld l,a
-        opl4_wt
+        OPL4_M_WT
         out (c),h
-        inc c
-	opl4_wt
+        OPL4_M_IOINC
+	    OPL4_M_WT
         out (c),l
-        dec c
+        OPL4_M_IODEC
         ret
 ;read A from memory
 op4memr ld h,6
-	opl4_wt
+	    OPL4_M_WT
         out (c),h
-        inc c
-	opl4_wt
+        OPL4_M_IOINC
+	    OPL4_M_WT
         in a,(c)
-        dec c
+        OPL4_M_IODEC
         ret
 
 
 ;### OP4RES -> resets OPL4 hardware (enables WAV)
 ;### Destroyed  AF,BC
-op4res  ld bc,OPL4_FM_C6
-        ;opl4_wt
+op4res  ld bc,OPL4_P_FM_C6
+        ;OPL4_M_WT
         ld a,5
         out (c),a
-        inc c
-        ;opl4_wt
+        OPL4_M_IOINC
+        ;OPL4_M_WT
         ld a,3
         out (c),a
         ret
@@ -2056,37 +2091,37 @@ op4res  ld bc,OPL4_FM_C6
 ;### OP4SET -> sets multiple OPL4 registers
 ;### Input      (HL)=reg1, dat1, reg2, dat2, ... 0
 ;### Destroyed  AF,BC,HL
-op4set  ld bc,OPL4_REG
-op4set1 opl4_wt
+op4set  ld bc,OPL4_P_REG
+op4set1 OPL4_M_WT
         ld a,(hl)
         or a
         ret z
         out (c),a
         inc hl
-        inc c
-        opl4_wt
+        OPL4_M_IOINC
+        OPL4_M_WT
         ld a,(hl)
         out (c),a
-        dec c
+        OPL4_M_IODEC
         inc hl
         jr op4set1
 
 ;### OP4ADR -> sets OPL4 ram read/write address
 ;### Input      EHL=22bit address
 ;### Destroyed  AF,BC,DE
-op4adr  ld bc,OPL4_REG
+op4adr  ld bc,OPL4_P_REG
         set 5,e         ;always select upper 2MB
         ld d,3
-        opl4_wt:out (c),d:inc c:opl4_wt:out (c),e:dec c:inc d
-        opl4_wt:out (c),d:inc c:opl4_wt:out (c),h:dec c:inc d
-        opl4_wt:out (c),d:inc c:opl4_wt:out (c),l:dec c
+        OPL4_M_WT:out (c),d:OPL4_M_IOINC:OPL4_M_WT:out (c),e:OPL4_M_IODEC:inc d
+        OPL4_M_WT:out (c),d:OPL4_M_IOINC:OPL4_M_WT:out (c),h:OPL4_M_IODEC:inc d
+        OPL4_M_WT:out (c),d:OPL4_M_IOINC:OPL4_M_WT:out (c),l:OPL4_M_IODEC
         ret
 
 ;### OP4VMA -> sets OPL4 master volume
 ;### Input      D=master volume (0-7, 0=full, 7=off)
 ;### Destroyed  AF,BC,E
-op4vma  ld bc,OPL4_REG
-        opl4_wt
+op4vma  ld bc,OPL4_P_REG
+        OPL4_M_WT
         ld a,#f9
         out (c),a
         ld a,d
@@ -2096,9 +2131,9 @@ op4vma  ld bc,OPL4_REG
         ld e,a
         ld a,d
         or e
-        inc c
+        OPL4_M_IOINC
         ld e,a
-        opl4_wt
+        OPL4_M_WT
         out (c),e
         ret
 
@@ -2167,16 +2202,16 @@ op4vmu1 ld e,c
 ;### Input      E=volume (0-64), (channel)=channel
 ;### Destroyed  AF,BC,DE,HL
 op4vch  ld hl,op4volm
-op4vch0 ld bc,OPL4_REG
-        opl4_wt
+op4vch0 ld bc,OPL4_P_REG
+        OPL4_M_WT
         ld a,(channel)
         add #50         ;set total level   
         out (c),a
         ld d,0
         add hl,de
         ld e,(hl)
-        inc c
-        opl4_wt
+        OPL4_M_IOINC
+        OPL4_M_WT
         out (c),e
         ret
 
@@ -2184,7 +2219,7 @@ op4vch0 ld bc,OPL4_REG
 op4kon  call op4key
         set 7,a
         ld e,a
-        opl4_wt
+        OPL4_M_WT
         out (c),e
         ret
 
@@ -2194,23 +2229,23 @@ op4kof  ld e,0
         call op4key
         res 7,a
         ld e,a
-        opl4_wt
+        OPL4_M_WT
         out (c),e
         ret
 
 ;### OP4KEY -> prepare OPL4 key on/off and panning
 ;### Input      (channel)=channel, (op4keyp+channel)=panning
-;### Output     A=panning, BC=OPL4_DATA
+;### Output     A=panning, BC=OPL4_P_DATA
 ;### Destroyed  F,BC,DE,HL
 op4keyp db 5,11,11,5    ;0-15
 
-op4key  ld bc,OPL4_REG
-        opl4_wt
+op4key  ld bc,OPL4_P_REG
+        OPL4_M_WT
         ld a,(channel)
         ld e,a
         add #68         ;keyon/panpot
         out (c),a
-        inc c
+        OPL4_M_IOINC
         ld d,0
         ld hl,op4keyp
         add hl,de
@@ -2267,29 +2302,29 @@ db #F8+1,#D3+8,#F4+1,#D3+8,#F0+1,#D3+8,#EC+1,#D3+8,#EA+1,#D3+8,#E6+1,#D3+8,#E2+1
 db #B2+1,#D3+8,#AE+1,#D3+8,#AC+1,#D3+8,#A8+1,#D3+8,#A4+1,#D3+8,#A2+1,#D3+8,#9E+1,#D3+8,#9A+1,#D3+8,#98+1,#D3+8,#94+1,#D3+8,#90+1,#D3+8,#8E+1,#D3+8,#8A+1,#D3+8,#86+1,#D3+8,#84+1,#D3+8,#80+1,#D3+8,#7E+1,#D3+8,#7A+1,#D3+8,#76+1,#D3+8,#74+1,#D3+8
 
 op4ton  add hl,hl
-	ld de,op4tonp-216
-	add hl,de
-	ld e,(hl)
-	inc hl
-	ld d,(hl)
-	ld hl,(channel)
-	ld bc,OPL4_REG
-	opl4_wt
-	ld a,#38        ;1st -> set octave   
-	add l
-	out (c),a
-	inc c
-	opl4_wt
-	out (c),d
-	dec c
-	opl4_wt
-	ld a,#20	;2nd -> set f-num  
-	add l
-	out (c),a
-	inc c
-	opl4_wt
-	out (c),e
-	ret
+        ld de,op4tonp-216
+        add hl,de
+        ld e,(hl)
+        inc hl
+        ld d,(hl)
+        ld hl,(channel)
+        ld bc,OPL4_P_REG
+        OPL4_M_WT
+        ld a,#38        ;1st -> set octave   
+        add l
+        out (c),a
+        OPL4_M_IOINC
+        OPL4_M_WT
+        out (c),d
+        OPL4_M_IODEC
+        OPL4_M_WT
+        ld a,#20	    ;2nd -> set f-num  
+        add l
+        out (c),a
+        OPL4_M_IOINC
+        OPL4_M_WT
+        out (c),e
+        ret
 
 ;### OP4SMP -> starts new sample, if changed
 ;### Input      (channel)=channel, IY=data record
@@ -2300,13 +2335,13 @@ op4smp  ld a,(iy+n_sampnum)
         ld (iy+n_oldsamp),a
         add 127
 op4smp1 ld e,a
-        ld bc,OPL4_REG
-        opl4_wt
+        ld bc,OPL4_P_REG
+        OPL4_M_WT
         ld a,(channel)
         add #08         ;set sample number   
         out (c),a
-        inc c
-        opl4_wt
+        OPL4_M_IOINC
+        OPL4_M_WT
         out (c),e
         ret
 
@@ -2382,15 +2417,15 @@ op4xpl  push de
         call op4smp1    ;set sample
         pop hl
         call op4ton     ;set period
-        dec c
-        opl4_wt
+        OPL4_M_IODEC
+        OPL4_M_WT
         ld a,(channel)
         add #68         ;key/panpot
         out (c),a
-        inc c
+        OPL4_M_IOINC
         pop de          ;e=panning
         set 7,e         ;e=panning + keyon
-        opl4_wt
+        OPL4_M_WT
         out (c),e
         ld e,d
         ld hl,op4volx

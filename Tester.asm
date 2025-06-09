@@ -127,18 +127,32 @@ statab0 cp (hl)
 ;### Input      (HL)=number, DE=string pointer
 ;### Output     DE=DE+1
 ;### Destroyed  AF
-clchex  xor a
-        rld
+clchex  ld a,(hl)
+        ld c,a
+        rlca:rlca:rlca:rlca
         call clchex1
         inc de
-clchex1 push af
-        daa
-        add #f0
-        adc #40
-        ld (de),a
-        pop af
-        rld
+        ld a,c
+clchex1 and 15
+        add "0"
+        cp "9"+1
+        jr c,clchex2
+        add "A"-"9"-1
+clchex2 ld (de),a
         ret
+
+;clchex  xor a
+;        rld
+;        call clchex1
+;        inc de
+;clchex1 push af
+;        daa
+;        add #f0
+;        adc #40
+;        ld (de),a
+;        pop af
+;        rld
+;        ret
 
 ;### CLCR16 -> Wandelt String in 16Bit Zahl um
 ;### Eingabe    IX=String, A=Terminator, BC=Untergrenze (>=0), DE=Obergrenze (<=65534)
