@@ -112,6 +112,7 @@ xskip1
     ld a,1
     out (PORT_PSG_REG),a
     ld a,h
+and #1f
     out (PORT_PSG_DATA),a
 PLY_SE_PSGREG23_INSTR ld hl,0
 add hl,hl
@@ -129,6 +130,7 @@ xskip2
     ld a,3
     out (PORT_PSG_REG),a
     ld a,h
+and #1f
     out (PORT_PSG_DATA),a
 PLY_SE_PSGREG45_INSTR ld hl,0
 add hl,hl
@@ -146,6 +148,7 @@ xskip3
     ld a,5
     out (PORT_PSG_REG),a
     ld a,h
+and #1f
     out (PORT_PSG_DATA),a
 PLY_SE_PSGREG6 equ $+1
 PLY_SE_PSGREG8 equ $+2
@@ -158,6 +161,7 @@ add a
     ld a,8
     out (PORT_PSG_REG),a
     ld a,h
+and #1f
     out (PORT_PSG_DATA),a
 PLY_SE_PSGREG9 equ $+1
 PLY_SE_PSGREG10 equ $+2
@@ -165,10 +169,12 @@ PLY_SE_PSGREG9_10_INSTR ld hl,0
     ld a,9
     out (PORT_PSG_REG),a
     ld a,l
+and #1f
     out (PORT_PSG_DATA),a
     ld a,10
     out (PORT_PSG_REG),a
     ld a,h
+and #1f
     out (PORT_PSG_DATA),a
 PLY_SE_PSGHARDWAREPERIOD_INSTR ld hl,0
 add hl,hl
