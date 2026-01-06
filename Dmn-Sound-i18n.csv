@@ -1,0 +1,110 @@
+labels,ENG,DEU,NLD
+### pack0,108,1855
+gentxtoky,Ok,Ok,OK
+gentxtset,Settings...,Einstellungen,Instellingen
+gentxtvct,Volume control,Lautstärke,Volume
+gentxtmut,Mute,Stumm,Demp
+gentxttfx,Effects,Effekte,Effecten
+gentxttms,Music,Musik,Muziek
+gentxtdpr,Preferred output device:,Bevorzugtes Audiogerät:,Voorkeur uitvoer:
+prgmsgshm1,Are you sure you want to,"Sicher, daß das aktuelle",Weet u zeker?
+prgmsgshm2,reset the current sound,Soundschema zurückgesetzt,Geluidsschema resetten
+prgmsgshm3,scheme?,werden soll?,naar standard schema?
+prgmsgmmu1,Are you sure you want to,"Sicher, daß jede geladene",Weet u zeker?
+prgmsgmmu2,clean-up all loaded,Musik gelöscht werden,Muziek geheugen
+prgmsgmmu3,music?,soll?,opschonen
+prgmsgmfx1,Are you sure you want to,"Sicher, daß alle zusätzlich",Weet u zeker?
+prgmsgmfx2,reset the current sound,geladenen Effekte gelöscht,Effecten geheugen
+prgmsgmfx3,effects?,werden sollen?,resetten
+prgmsgam11,Please quit SymAmp first!,SymAmp zuerst beenden!,SymAmp eerst afsluiten!
+prgmsgam12,Then you can start the Sound,Dann zuerst den Sound Daemon,Start Sound Daemon
+prgmsgam13,Daemon and run SymAmp again.,und dann SymAmp starten.,en SymAmp opnieuw.
+prgmsgam22,Then you can quit the,Danach kann auch der Sound,Daarna Sound Daemon 
+prgmsgam23,Sound Daemon as well.,Daemon beendet werden.,afsluiten.
+prgmsgwpf1,Wrong platform! This is for:,"Falsche Plattform, das ist für:",Verkeerd platform!
+prgmsgwpf3,Please replace SOUNDD.EXE .,Bitte SOUNDD.EXE ersetzen.,Vervang SOUNDD.EXE
+trymentxt1, Open mixer..., Mixer öffnen..., Mixer openen...
+trymentxt2, Open sound settings..., Einstellungen öffnen..., Geluidsinstellingen...
+trymentxt3, Mute effects, Effekte stumm, Effecten dempen
+trymentxt4, Mute music, Musik stumm, Muziek dempen
+trymentxt5, Quit Sound Daemon, Sound Daemon beenden, Sound Daemon afsluiten
+stamentxt1,File,Datei,Bestand
+stamentxt2,?,?,?
+stamentxt11, Save settings, Einstellungen speichern, Instellingen opslaan
+stamentxt12, Hide on startup, Beim Start ausblenden, Verbergen bij opstarten
+stamentxt13, Quit, Beenden, Afsluiten
+stamentxt21, Help topics, Hilfethemen, Help
+stamentxt22, About, Info, Over
+statxttit,Sound daemon,Sound Daemon,Sound Daemon
+statxtbta,Hide,Ausblenden,Verbergen
+statxtbtb,Save,Speichern,Opslaan
+statxttba1,Mixer,Mixer,Mixer
+statxttba2,System sounds,Systemklänge,Systeemgeluiden
+statxttba3,Settings,Einstell.,Opties
+statxttba4,Stats,Statistiken,Statistieken
+systxtevt,Events:,Ereignis:,Gebeurtenissen:
+systxtsnd,Sound:,Klang:,Geluid:
+systxttst,>> Test,>> Test,>> Test
+systxtsta,SymbOS startup sound,SymbOS Startsound,SymbOS opstartgeluid
+systxtsht,Sound scheme,Soundschema,Geluidsschema
+systxtshl,Load...,Laden...,Laden...
+systxtshs,Save...,Sichern...,Opslaan...
+systxtshd,Default,Standard,Standaard
+systxte00,Notification - hint,Meldung - Hinweis,Melding - hint
+systxte01,Notification - warning,Meldung - Warnung,Melding - waarschuwing
+systxte02,Notification - message,Meldung - Allgemein,Melding - bericht
+systxte03,Window - open,Fenster - öffnen,Venster - openen
+systxte08,Window - close,Fenster - schließen,Venster - sluiten
+systxte04,Window - top,Fenster - nach oben,Venster - boven
+systxte05,Window - restore,Fenster - wiederherstellen,Venster - herstellen
+systxte06,Window - maximize,Fenster - maximieren,Venster - maximaliseren
+systxte07,Window - minimize,Fenster - minimieren,Venster - minimaliseren
+systxte17,Window - move,Fenster - bewegen,Venster - verplaatsen
+systxte18,Window - resize,Fenster - Größe ändern,Venster - formaat wijzigen
+systxte09,Menu - open,Menü - öffnen,Menu - openen
+systxte10,Menu - entry hover,Menü - anwählen,Menu - item hover
+systxte11,Menu - entry clicked,Menü - klicken,Menu - item klik
+systxte12,Click - button/tab,Klick - Knopf/Reiter,Klik - knop/tab
+systxte13,Click - bitmap,Klick - Grafik,Klik - bitmap
+systxte14,Click - slider,Klick - Regler,Klik - schuif
+systxte15,Click - list,Klick - Liste,Klik - lijst
+systxte16,Click - text,Klick - Text,Klik - tekst
+systxts00,(None),(Nichts),(Geen)
+systxts01,Click 1,Klick 1,Klik 1
+systxts02,Click 2,Klick 2,Klik 2
+systxts03,Beep 1,Piep 1,Pieptoon 1
+systxts04,Beep 2,Piep 2,Pieptoon 2
+systxts05,Ring 1,Klingeln 1,Bel 1
+systxts06,Ring 2,Klingeln 2,Bel 2
+systxts07,Alert 1,Alarm 1,Alarm 1
+systxts08,Alert 2,Alarm 2,Alarm 2
+systxts09,Slide 1,Gleiten 1,Slide 1
+systxts10,Slide 2,Gleiten 2,Slide 2
+systxts11,Raise up,Aufsteigen,Omhoog
+systxts12,Raise down,Absteigen,Omlaag
+systxts13,Pop up,Aufploppen,Pop-up
+systxts14,Shrink,Schrumpfen,Verkleinen
+systxts15,Tick 1,Ticken 1,Tik 1
+systxts16,Tick 2,Ticken 2,Tik 2
+systxts17,Shoot,Schießen,Schot
+systxts18,Explosion,Explosion,Explosie
+systxts19,Step,Schritt,Stap
+systxts20,Lose,Verlieren,Verlies
+systxts21,Win,Gewinnen,Winst
+volmentxtv,Volume,Lautstärke,Volume
+volmentxt8,|||||||| max,|||||||| max,|||||||| max
+volmentxt1,|      min,|      min,|      min
+settxtchn,PSG effect channel,PSG Effekt Kanal,PSG-Effect kanaal
+settxtch0,use all,Alle,Alles
+settxtch1,left,Links,Links
+settxtch2,middle,Zentral,Midden
+settxtch3,right,Rechts,Rechts
+settxtssf,System sound file,Systemsound-Datei,Systeemgeluid
+settxtsmo,Disable music,Musik deaktivieren,Muziek uit
+statxtmfr,Memory usage,Speichernutzung,Geheugen
+statxtmtt,Total,Gesamt,Totaal
+statxtmtm,Music,Musik,Muziek
+statxtmtx,Effects,Effekte,Effecten
+statxtmtf,Free,Frei,Vrij
+statxtmmu,Clean-up music,Musik bereinigen,Muziek opschonen
+statxtmfx,Clean-up effects,Effekte bereinigen,Effecten opschonen

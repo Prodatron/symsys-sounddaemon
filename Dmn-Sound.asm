@@ -163,6 +163,7 @@ stawinvis   db 0    ;0=not visible, -1=visible
 
 ;### PRGPRZ -> Application process
 prgprz  call prgdbl                 ;check, if already running
+        call prglng
         call prgver
         ld hl,prgmsgam1
         call prgamp
@@ -278,20 +279,6 @@ prgend1 call dskoff
 prgend0 rst #30
         jr prgend0
 
-;### PRGDBL -> Check,if program is already running
-prgdbln db "Sound Daemon"
-prgdbl  xor a
-        ld (App_BegCode+prgdatnam),a
-        ld e,0
-        ld hl,prgdbln
-        ld a,(App_BnkNum)
-        call SySystem_PRGSRV
-        or a
-        jr z,prgend1
-        ld a,"S"
-        ld (App_BegCode+prgdatnam),a
-        ret
-
 ;### PRGVER -> Plattform-Check
 prgver  ld hl,jmp_sysinf            ;*** Computer-Typ holen
         ld de,256*1+5
@@ -336,6 +323,33 @@ prgver1 ld b,8*1+1
         ld hl,prgmsgwpf
         call prginf0
         jr prgend
+
+;### PRGLNG -> load language pack
+prglng  ld hl,(App_BegCode)
+        ld de,App_BegCode
+        dec h
+        add hl,de               ;HL=code area end=path
+        ex de,hl
+        ld a,(App_BnkNum)
+        ld c,a
+        ld hl,texts_int
+        ld ix,256*0+9           ;default language=9 (english), pack=0
+        ld iyl,0                ;language-file version 0
+        jp SySystem_LNGLOD
+
+;### PRGDBL -> Check,if program is already running
+prgdbln db "Sound Daemon"
+prgdbl  xor a
+        ld (App_BegCode+prgdatnam),a
+        ld e,0
+        ld hl,prgdbln
+        ld a,(App_BnkNum)
+        call SySystem_PRGSRV
+        or a
+        jr z,prgend1
+        ld a,"S"
+        ld (App_BegCode+prgdatnam),a
+        ret
 
 ;### PRGINF -> open info window
 prginf  ld b,8*2+1+64+128
@@ -2977,6 +2991,17 @@ db #76,#16,#71,#11,#76,#66,#18,#88
 db #76,#66,#66,#66,#66,#66,#18,#88
 db #61,#11,#11,#11,#11,#11,#68,#88
 
+;==============================================================================
+;%%% MULTI LANGUAGE TEXTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+;==============================================================================
+
+texts_int
+read"Dmn-Sound-Texts.asm"
+texts_int_end
+
+list
+texts_int_len   equ texts_int_end-texts_int
+nolist
 
 ;### info
 prgmsginf1  db "SymbOS Sound Daemon",0
@@ -2985,8 +3010,7 @@ read "..\..\..\SRC-Main\build.asm"
             db "pdt)",0
 prgmsginf3  db " <c> 2025 SymbiosiS/Arkos/NOP",0
 
-prgmsgwpf1 db "Wrong platform! This Sound Daemon",0
-prgmsgwpf2 db "is for the "
+prgmsgwpf2
 if     PLATFORM_TYPE=PLATFORM_CPC
                        db "AMSTRAD CPC.",0
 elseif PLATFORM_TYPE=PLATFORM_MSX
@@ -3004,32 +3028,13 @@ elseif PLATFORM_TYPE=PLATFORM_ZNX
 elseif PLATFORM_TYPE=PLATFORM_ISA
                        db "ISETTA TTL.",0
 endif
-prgmsgwpf3 db "Please replace SOUNDD.EXE .",0
-
-;### SymAmp
-prgmsgam11  db "Please quit SymAmp first!",0
-prgmsgam12  db "Then you can start the Sound",0
-prgmsgam13  db "Daemon and run SymAmp again.",0
-prgmsgam21  equ prgmsgam11
-prgmsgam22  db "Then you can quit the",0
-prgmsgam23  db "Sound Daemon as well.",0
-
-
-prgmsgshm1  db "Are you sure you want to",0
-prgmsgshm2  db "reset the current sound",0
-prgmsgshm3  db "scheme?",0
-
-prgmsgmmu2  db "clean-up all loaded",0
-prgmsgmmu3  db "music?",0
-
-prgmsgmfx3  db "effects?",0
 
 ;### systray menu
-trymentxt1  db 6,128,-1:dw menicn_mixer       +1:db " Open mixer...",0
-trymentxt2  db 6,128,-1:dw menicn_settings    +1:db " Open sound settings...",0
-trymentxt3  db 6,128,-1:dw menicn_muteefx     +1:db " Mute effects",0
-trymentxt4  db 6,128,-1:dw menicn_mutemus     +1:db " Mute music",0
-trymentxt5  db 6,128,-1:dw menicn_quit        +1:db " Quit Sound Daemon",0
+trymentxt1  db 6,128,-1:dw menicn_mixer       +1:db 7:dw trymentxt1_poi:db 0
+trymentxt2  db 6,128,-1:dw menicn_settings    +1:db 7:dw trymentxt2_poi:db 0
+trymentxt3  db 6,128,-1:dw menicn_muteefx     +1:db 7:dw trymentxt3_poi:db 0
+trymentxt4  db 6,128,-1:dw menicn_mutemus     +1:db 7:dw trymentxt4_poi:db 0
+trymentxt5  db 6,128,-1:dw menicn_quit        +1:db 7:dw trymentxt5_poi:db 0
 
 menicn_mixer        db 4,8,7:dw $+7,$+4,28:db 5: db #00,#10,#01,#00, #00,#10,#01,#00, #07,#77,#01,#00, #00,#10,#01,#00, #00,#10,#77,#70, #00,#10,#01,#00, #00,#10,#01,#00
 menicn_settings     db 4,8,7:dw $+7,$+4,28:db 5: db #66,#6c,#66,#66, #6c,#6c,#6c,#66, #6f,#cd,#cf,#66, #cc,#c1,#cc,#c6, #ff,#cc,#cf,#f6, #6c,#fc,#fc,#66, #6f,#6c,#6f,#66
@@ -3037,41 +3042,17 @@ menicn_muteefx      db 4,8,7:dw $+7,$+4,28:db 5: db #66,#61,#16,#66, #66,#18,#16
 menicn_mutemus      db 4,8,7:dw $+7,$+4,28:db 5: db #66,#61,#11,#66, #66,#61,#11,#16, #66,#61,#61,#16, #61,#11,#66,#66, #18,#81,#63,#63, #1e,#e1,#66,#36, #61,#16,#63,#63
 
 ;### status menu text
-stamentxt1  db "File",0
-stamentxt2  db "?",0
-stamentxt11 db 6,128,-1:dw menicn_filesave    +1:db " Save settings",0
-stamentxt12 db 6,128,-1:dw menicn_hide        +1:db " Hide on startup",0
-stamentxt13 db 6,128,-1:dw menicn_quit        +1:db " Quit",0
-stamentxt21 db 6,128,-1:dw menicn_help        +1:db " Help topics",0
-stamentxt22 db 6,128,-1:dw menicn_about       +1:db " About",0
+stamentxt11 db 6,128,-1:dw menicn_filesave    +1:db 7:dw stamentxt11_poi:db 0
+stamentxt12 db 6,128,-1:dw menicn_hide        +1:db 7:dw stamentxt12_poi:db 0
+stamentxt13 db 6,128,-1:dw menicn_quit        +1:db 7:dw stamentxt13_poi:db 0
+stamentxt21 db 6,128,-1:dw menicn_help        +1:db 7:dw stamentxt21_poi:db 0
+stamentxt22 db 6,128,-1:dw menicn_about       +1:db 7:dw stamentxt22_poi:db 0
 
 menicn_filesave     db 4,8,7:dw $+7,$+4,28:db 5: db #11,#11,#11,#11, #1f,#ee,#ee,#f1, #1f,#ee,#ee,#f1, #1f,#ff,#ff,#f1, #1f,#11,#c1,#f1, #1f,#11,#c1,#f1, #61,#11,#11,#11
 menicn_hide         db 4,8,7:dw $+7,$+4,28:db 5: db #66,#11,#11,#66, #66,#18,#81,#66, #11,#18,#81,#11, #61,#88,#88,#16, #66,#18,#81,#66, #77,#71,#17,#77, #77,#77,#77,#77
 menicn_quit         db 4,8,7:dw $+7,$+4,28:db 5: db #ff,#66,#66,#ff, #6f,#f6,#6f,#f6, #66,#ff,#ff,#66, #66,#6f,#f6,#66, #66,#ff,#ff,#66, #6f,#f6,#6f,#f6, #ff,#66,#66,#ff
 menicn_help         db 4,8,7:dw $+7,$+4,28:db 5: db #66,#1f,#f1,#66, #61,#fc,#cf,#16, #1f,#ff,#fc,#f1, #ff,#fc,#cc,#f1, #ff,#ff,#ff,#18, #1f,#cf,#f1,#81, #61,#ff,#18,#16
 menicn_about        db 4,8,7:dw $+7,$+4,28:db 5: db #66,#10,#07,#66, #66,#10,#07,#66, #66,#66,#66,#66, #61,#00,#07,#66, #66,#10,#07,#66, #66,#10,#07,#66, #61,#00,#00,#76
-
-;### status text data
-statxttit   db "Sound daemon",0
-statxtbta   db "Hide",0
-statxtbtb   db "Save",0
-
-statxttba1  db "Mixer",0
-statxttba2  db "System sounds",0
-statxttba3  db "Settings",0
-statxttba4  db "Stats",0
-
-;### general
-gentxtoky   db "Ok",0
-gentxtset   db "Settings...",0
-
-gentxtvct   db "Volume control",0
-gentxtmut   db "Mute",0
-
-gentxttfx   db "Effects",0
-gentxttms   db "Music",0
-
-gentxtdpr   db "Preferred output device",0
 
 gentxtd01
 if     PLATFORM_TYPE=PLATFORM_PCW
@@ -3108,97 +3089,20 @@ elseif PLATFORM_TYPE=PLATFORM_ISA
 db "ISA driver 1.0",0
 endif
 
-;### system sounds
-systxtevt   db "Events:",0
-systxtsnd   db "Sound:",0
-systxttst   db ">> Test",0
-systxtsta   db "play SymbOS startup sound",0
-
-systxtsht   db "Sound scheme",0
-systxtshl   db "Load...",0
-systxtshs   db "Save...",0
-systxtshd   db "Default",0
-
-systxte00   db "Notification - hint",0
-systxte01   db "Notification - warning",0
-systxte02   db "Notification - message",0
-
-systxte03   db "Window - open",0
-systxte08   db "Window - close",0
-systxte04   db "Window - top",0
-systxte05   db "Window - restore",0
-systxte06   db "Window - maximize",0
-systxte07   db "Window - minimize",0
-systxte17   db "Window - move",0
-systxte18   db "Window - resize",0
-
-systxte09   db "Menu - open",0
-systxte10   db "Menu - entry hover",0
-systxte11   db "Menu - entry clicked",0
-
-systxte12   db "Click - button/tab",0
-systxte13   db "Click - bitmap",0
-systxte14   db "Click - slider",0
-systxte15   db "Click - list",0
-systxte16   db "Click - text",0
-
-systxts00   db "(None)",0
-systxts01   db "Click 1",0
-systxts02   db "Click 2",0
-systxts03   db "Beep 1",0
-systxts04   db "Beep 2",0
-systxts05   db "Ring 1",0
-systxts06   db "Ring 2",0
-systxts07   db "Alert 1",0
-systxts08   db "Alert 2",0
-systxts09   db "Slide 1",0
-systxts10   db "Slide 2",0
-systxts11   db "Raise up",0
-systxts12   db "Raise down",0
-systxts13   db "Pop up",0
-systxts14   db "Shrink",0
-systxts15   db "Tic 1",0
-systxts16   db "Tic 2",0
-systxts17   db "Shoot",0
-systxts18   db "Explosion",0
-systxts19   db "Step",0
-systxts20   db "Lose",0
-systxts21   db "Win",0
-;asterisk, message
-
-volmentxtv  db "Volume",0
-volmentxt8  db "|||||||| max",0
 volmentxt7  db "|||||||",0
 volmentxt6  db "||||||",0
 volmentxt5  db "|||||",0
 volmentxt4  db "||||",0
 volmentxt3  db "|||",0
 volmentxt2  db "||",0
-volmentxt1  db "|      min",0
 
-;### settings
-settxtchn   db "PSG effect channel",0
-settxtch0   db "use all",0
-settxtch1   db "left",0
-settxtch2   db "middle",0
-settxtch3   db "right",0
-
-settxtssf   db "System sound file",0
+settxtssb   db "...",0
 settxtssp   db "PSG",0
 settxtsso   db "OPL4",0
-settxtssb   db "...",0
-
-settxtsmo   db "Disable music",0
 
 ;### stats
-statxtmfr   db "Memory usage",0
-
 statxtmtc   db "CPU ram",0
 statxtmto   db "OPL4 ram",0
-statxtmtt   db "Total",0
-statxtmtm   db "Music",0
-statxtmtx   db "Effects",0
-statxtmtf   db "Free",0
 
 statxtmct   ds 8
 statxtmcm   ds 8
@@ -3209,8 +3113,6 @@ statxtmom   ds 8
 statxtmox   ds 8
 statxtmof   ds 8
 
-statxtmmu   db "Clean-up music",0
-statxtmfx   db "Clean-up effects",0
 
 
 ;==============================================================================
@@ -3267,11 +3169,11 @@ setshmpth   db "SDS":db 0:ds 256
 ;### INFO-FENSTER #############################################################
 prgmsginf  dw prgmsginf1,4*1+2,prgmsginf2,4*1+2,prgmsginf3,4*1+2,0,prgicnbig,prgicn16c
 prgmsgshm  dw prgmsgshm1,4*1+2,prgmsgshm2,4*1+2,prgmsgshm3,4*1+2
-prgmsgmmu  dw prgmsgshm1,4*1+2,prgmsgmmu2,4*1+2,prgmsgmmu3,4*1+2
-prgmsgmfx  dw prgmsgshm1,4*1+2,prgmsgmmu2,4*1+2,prgmsgmfx3,4*1+2
+prgmsgmmu  dw prgmsgmmu1,4*1+2,prgmsgmmu2,4*1+2,prgmsgmmu3,4*1+2
+prgmsgmfx  dw prgmsgmfx1,4*1+2,prgmsgmfx2,4*1+2,prgmsgmfx3,4*1+2
 prgmsgwpf  dw prgmsgwpf1,4*1+2,prgmsgwpf2,4*1+2,prgmsgwpf3,4*1+2
 prgmsgam1  dw prgmsgam11,4*1+2,prgmsgam12,4*1+2,prgmsgam13,4*1+2
-prgmsgam2  dw prgmsgam21,4*1+2,prgmsgam22,4*1+2,prgmsgam23,4*1+2
+prgmsgam2  dw prgmsgam11,4*1+2,prgmsgam22,4*1+2,prgmsgam23,4*1+2
 
 
 ;### systray mixer window/menu data
@@ -3279,13 +3181,13 @@ mixwinxln   equ 98
 mixwinyln   equ 54
 
 trymendat   dw 7
-            dw 17,trymentxt1, prgtrym, 0
-            dw 17,trymentxt2, prgtrys, 0
+            dw 33,trymentxt1, prgtrym, 0
+            dw 33,trymentxt2, prgtrys, 0
             dw 8,0,0,0
-trymendat1  dw 17,trymentxt3, setxmt0, 0
-trymendat2  dw 17,trymentxt4, setmmt0, 0
+trymendat1  dw 33,trymentxt3, setxmt0, 0
+trymendat2  dw 33,trymentxt4, setmmt0, 0
             dw 8,0,0,0
-            dw 17,trymentxt5, prgend,  0
+            dw 33,trymentxt5, prgend,  0
 
 mixwindat   dw #0501,4,56,26,mixwinxln,mixwinyln,0,0,mixwinxln,mixwinyln,mixwinxln,mixwinyln,mixwinxln,mixwinyln,0,0,0,0,mixwingrp,0,0:ds 136+14
 mixwingrp   db 9,0:dw mixwinrec,0,0,8*256+9,0,0,7
@@ -3302,7 +3204,7 @@ dw prgtrys, 255*256+16, gentxtset,    36,    40,    60,    12, 0    ;08=button "
 
 
 ;### status window data
-stawindat   dw #3501,0,56,26,172,126,0,0,172,126,172,126,172,126,prgicnsml,statxttit,0,stamendat
+stawindat   dw #3501,0,56,26,180,126,0,0,180,126,180,126,180,126,prgicnsml,statxttit,0,stamendat
 stawindat0  dw stawingrpa,0,0:ds 136+14
 stawingrpa  db 19,0:dw stawindata,0,0,19*256+18,0,0,2
 stawingrpb  db 16,0:dw stawindatb,0,0,16*256+15,0,0,2
@@ -3310,85 +3212,85 @@ stawingrpc  db 19,0:dw stawindatc,0,0,19*256+18,0,0,2
 stawingrpd  db 21,0:dw stawindatd,0,0,21*256+00,0,0,2
 
 stamendat   dw 2, 1+4,stamentxt1,stamendat1,0,     1+4,stamentxt2,stamendat2,0
-stamendat1  dw 4, 17,stamentxt11,staapl,0
-stamendat1a dw    17,stamentxt12,cfghid,0,   1+8,#0000,0,0, 17,stamentxt13,prgend,0    ;save settings/hide to systray/-/quit
-stamendat2  dw 3, 17,stamentxt21,prghlp,0,   1+8,#0000,0,0, 17,stamentxt22,prginf,0    ;index/-/about
+stamendat1  dw 4, 33,stamentxt11,staapl,0
+stamendat1a dw    33,stamentxt12,cfghid,0,   1+8,#0000,0,0, 33,stamentxt13,prgend,0    ;save settings/hide to systray/-/quit
+stamendat2  dw 3, 33,stamentxt21,prghlp,0,   1+8,#0000,0,0, 33,stamentxt22,prginf,0    ;index/-/about
 
 volmendat   dw 9, 0,volmentxtv,0,0, 1,volmentxt8,255,0, 1,volmentxt7,224,0, 1,volmentxt6,192,0, 1,volmentxt5,160,0, 1,volmentxt4,128,0, 1,volmentxt3,096,0, 1,volmentxt2,064,0, 1,volmentxt1,032,0
 
 stawindata                                                              ;*** GENERAL
 ; onclick         type   property   xpos   ypos   xlen   ylen
 dw      0,  255*256+ 0,         2,     0,     0, 10000, 10000, 0    ;00=background
-dw statab,  255*256+20, stactrtba,     0,     2,   172,    11, 0    ;01=tab
+dw statab,  255*256+20, stactrtba,     0,     2,   180,    11, 0    ;01=tab
 dw      0,  255*256+10, prgicn16c,     3,    18,    24,    24, 0    ;02=icon
 dw      0,  255*256+ 1, genctrdpr,    40,    18,   112,     8, 0    ;03=device text
 dw setdvc,  255*256+42, genctrdls,    40,    28,   112,    10, 0    ;04=device dropdown
-dw      0,  255*256+ 3, genctrvct,     0,    49,   172,    61, 0    ;05=frame volume
+dw      0,  255*256+ 3, genctrvct,     0,    49,   180,    61, 0    ;05=frame volume
 dw      0,  255*256+10, gfxsnd   ,     8,    62,    16,    16, 0    ;06=effects icon
 dw      0,  255*256+ 1, genctrtfx,    32,    61,    30,     8, 0    ;07=effects text
 dw      0,  255*256+10, gfxvol   ,    68,    64,    60,     5, 0    ;08=effects volgfx
 dw setxmt,  255*256+17, genctrcfx,   137,    61,    72,     8, 0    ;09=effects mute
-dw setxvl,  255*256+24, genctrsfx,    32,    71,   132,     8, 0    ;10=effects slider
+dw setxvl,  255*256+24, genctrsfx,    32,    71,   140,     8, 0    ;10=effects slider
 dw      0,  255*256+10, gfxmus   ,     8,    86,    16,    16, 0    ;11=music icon
 dw      0,  255*256+ 1, genctrtms,    32,    85,    30,     8, 0    ;12=music text
 dw      0,  255*256+10, gfxvol   ,    68,    88,    60,     5, 0    ;13=music volgfx
 dw setmmt,  255*256+17, genctrcms,   137,    85,    72,     8, 0    ;14=music mute
-dw setmvl,  255*256+24, genctrsms,    32,    95,   132,     8, 0    ;15=music slider
+dw setmvl,  255*256+24, genctrsms,    32,    95,   140,     8, 0    ;15=music slider
 dw      0,  255*256+ 1, stactrdrv,     3,   113,   112,     8, 0    ;16=driver description
-dw staapl,  255*256+16, statxtbtb,    95,   111,    36,    12, 0    ;17=button apply
-dw stahid,  255*256+16, statxtbta,   133,   111,    36,    12, 0    ;18=button hide
+dw staapl,  255*256+16, statxtbtb,    71,   111,    52,    12, 0    ;17=button apply
+dw stahid,  255*256+16, statxtbta,   125,   111,    52,    12, 0    ;18=button hide
 
 stawindatb                                                              ;*** SYSTEM SOUNDS
 ; onclick         type   property   xpos   ypos   xlen   ylen
 dw      0,  255*256+ 0,         2,     0,     0, 10000, 10000, 0    ;00=background
-dw statab,  255*256+20, stactrtba,     0,     2,   172,    11, 0    ;01=tab
-dw      0,  255*256+17, sysctrcss,    50,    18,   128,     8, 0    ;02=symbos startup
+dw statab,  255*256+20, stactrtba,     0,     2,   180,    11, 0    ;01=tab
+dw      0,  255*256+17, sysctrcss,    74,    18,   128,     8, 0    ;02=symbos startup
 dw      0,  255*256+ 1, sysctletx,     3,    18,    36,     8, 0    ;03=event title
-dw setevt,  255*256+41, sysctrevt,     3,    28,   166,    34, 0    ;04=event list
-dw      0,  255*256+ 1, sysctlstx,     3,    66,   166,     8, 0    ;05=sound title
-dw setsnd,  255*256+42, sysctrsnd,    34,    65,   105,    10, 0    ;06=sound dropdown
-dw settst,  255*256+10, gfxply,      141,    64,    13,    12, 0    ;07=sound play   button
-dw setsvl,  255*256+10, gfxvbt,      156,    64,    13,    12, 0    ;08=sound volume button
-dw      0,  255*256+ 3, sysctrshf,     0,    79,   172,    31, 0    ;09=scheme frame
-dw setshl,  255*256+16, systxtshl,     8,    91,    50,    12, 0    ;10=scheme load
-dw setshs,  255*256+16, systxtshs,    61,    91,    50,    12, 0    ;11=scheme save
-dw setshd,  255*256+16, systxtshd,   114,    91,    50,    12, 0    ;12=scheme default
+dw setevt,  255*256+41, sysctrevt,     3,    28,   174,    34, 0    ;04=event list
+dw      0,  255*256+ 1, sysctlstx,     3,    66,    30,     8, 0    ;05=sound title
+dw setsnd,  255*256+42, sysctrsnd,    34,    65,   113,    10, 0    ;06=sound dropdown
+dw settst,  255*256+10, gfxply,      149,    64,    13,    12, 0    ;07=sound play   button
+dw setsvl,  255*256+10, gfxvbt,      164,    64,    13,    12, 0    ;08=sound volume button
+dw      0,  255*256+ 3, sysctrshf,     0,    79,   180,    31, 0    ;09=scheme frame
+dw setshl,  255*256+16, systxtshl,     8,    91,    54,    12, 0    ;10=scheme load
+dw setshs,  255*256+16, systxtshs,    65,    91,    54,    12, 0    ;11=scheme save
+dw setshd,  255*256+16, systxtshd,   122,    91,    50,    12, 0    ;12=scheme default
 dw      0,  255*256+ 1, stactrdrv,     3,   113,   112,     8, 0    ;13=driver description
-dw staapl,  255*256+16, statxtbtb,    95,   111,    36,    12, 0    ;14=button apply
-dw stahid,  255*256+16, statxtbta,   133,   111,    36,    12, 0    ;15=button hide
+dw staapl,  255*256+16, statxtbtb,    71,   111,    52,    12, 0    ;14=button apply
+dw stahid,  255*256+16, statxtbta,   125,   111,    52,    12, 0    ;15=button hide
 
 stawindatc                                                              ;*** SETTINGS
 ; onclick         type   property   xpos   ypos   xlen   ylen
 dw      0,  255*256+ 0,         2,     0,     0, 10000, 10000, 0    ;00=background
-dw statab,  255*256+20, stactrtba,     0,     2,   172,    11, 0    ;01=tab
-dw      0,  255*256+ 3, setctrchn,     0,    18,   172,    27, 0    ;02=psg channel frame
+dw statab,  255*256+20, stactrtba,     0,     2,   180,    11, 0    ;01=tab
+dw      0,  255*256+ 3, setctrchn,     0,    18,   180,    27, 0    ;02=psg channel frame
 dw      0,  255*256+17, setctrch0,     8,    29,    36,     8, 0    ;03=psg channel all
 dw      0,  255*256+18, setctrch1,    63,    29,    36,     8, 0    ;04=psg channel 1
 dw      0,  255*256+18, setctrch2,    94,    29,    36,     8, 0    ;05=psg channel 2
 dw      0,  255*256+18, setctrch3,   137,    29,    36,     8, 0    ;06=psg channel 3
 
-dw      0,  255*256+ 3, setctrssf,     0,    45,   172,    32, 0    ;07=files frame
+dw      0,  255*256+ 3, setctrssf,     0,    45,   180,    32, 0    ;07=files frame
 stawindatc1
 dw      0,  255*256+ 1, setctrssp,     8,    58,    18,     8, 0    ;08=files psg text
-dw      0,  255*256+32, setctrsip,    32,    56,    95,    12, 0    ;09=files psg input
-dw setfpb,  255*256+16, settxtssb,   129,    56,    20,    12, 0    ;10=files psg browse
+dw      0,  255*256+32, setctrsip,    32,    56,   103,    12, 0    ;09=files psg input
+dw setfpb,  255*256+16, settxtssb,   137,    56,    20,    12, 0    ;10=files psg browse
 dw      0,  255*256+ 1, setctrsso,     8,    58,    18,     8, 0    ;11=files opl4 text
-dw      0,  255*256+32, setctrsio,    32,    56,    95,    12, 0    ;12=files opl4 input
-dw setfob,  255*256+16, settxtssb,   129,    56,    20,    12, 0    ;13=files opl4 browse
-dw cfgrel,  255*256+10, gfxrel,      151,    56,    13,    12, 0    ;14=reload sounds
+dw      0,  255*256+32, setctrsio,    32,    56,   103,    12, 0    ;12=files opl4 input
+dw setfob,  255*256+16, settxtssb,   137,    56,    20,    12, 0    ;13=files opl4 browse
+dw cfgrel,  255*256+10, gfxrel,      159,    56,    13,    12, 0    ;14=reload sounds
 
 dw      0,  255*256+17, setctrmof,     4,    81,    60,     8, 0    ;15=disable music
 
 dw      0,  255*256+ 1, stactrdrv,     3,   113,   112,     8, 0    ;16=driver description
-dw staapl,  255*256+16, statxtbtb,    95,   111,    36,    12, 0    ;17=button apply
-dw stahid,  255*256+16, statxtbta,   133,   111,    36,    12, 0    ;18=button hide
+dw staapl,  255*256+16, statxtbtb,    71,   111,    52,    12, 0    ;17=button apply
+dw stahid,  255*256+16, statxtbta,   125,   111,    52,    12, 0    ;18=button hide
 
 
 stawindatd                                                              ;*** STATS
 ; onclick         type   property   xpos   ypos   xlen   ylen
 dw      0,  255*256+ 0,         2,     0,     0, 10000, 10000, 0    ;00=background
-dw statab,  255*256+20, stactrtba,     0,     2,   172,    11, 0    ;01=tab
-dw      0,  255*256+ 3, stactrmfr,     0,    18,   172,    68, 0    ;02=frame memory
+dw statab,  255*256+20, stactrtba,     0,     2,   180,    11, 0    ;01=tab
+dw      0,  255*256+ 3, stactrmfr,     0,    18,   180,    68, 0    ;02=frame memory
 dw      0,  255*256+ 1, stactrmtc,    46,    29,    50,     8, 0    ;03=memory title cpu
 dw      0,  255*256+ 1, stactrmto,   110,    29,    50,     8, 0    ;04=memory title opl4
 
@@ -3397,21 +3299,21 @@ dw      0,  255*256+ 1, stactrmtm,     8,    49,    40,     8, 0    ;06=memory t
 dw      0,  255*256+ 1, stactrmtx,     8,    59,    40,     8, 0    ;07=memory title effect
 dw      0,  255*256+ 1, stactrmtf,     8,    69,    40,     8, 0    ;08=memory title free
 
-dw      0,  255*256+ 1, stactrmct,    46,    39,    50,     8, 0    ;09=memory cpu  total
-dw      0,  255*256+ 1, stactrmot,   110,    39,    50,     8, 0    ;10=memory opl4 total
+dw      0,  255*256+ 1, stactrmct,    50,    39,    50,     8, 0    ;09=memory cpu  total
+dw      0,  255*256+ 1, stactrmot,   118,    39,    50,     8, 0    ;10=memory opl4 total
 
-dw      0,  255*256+ 1, stactrmcm,    46,    49,    50,     8, 0    ;11=memory cpu  music
-dw      0,  255*256+ 1, stactrmcx,    46,    59,    50,     8, 0    ;12=memory cpu  effects
-dw      0,  255*256+ 1, stactrmcf,    46,    69,    50,     8, 0    ;13=memory cpu  free
-dw      0,  255*256+ 1, stactrmom,   110,    49,    50,     8, 0    ;14=memory opl4 music
-dw      0,  255*256+ 1, stactrmox,   110,    59,    50,     8, 0    ;15=memory opl4 effects
-dw      0,  255*256+ 1, stactrmof,   110,    69,    50,     8, 0    ;16=memory opl4 free
+dw      0,  255*256+ 1, stactrmcm,    50,    49,    50,     8, 0    ;11=memory cpu  music
+dw      0,  255*256+ 1, stactrmcx,    50,    59,    50,     8, 0    ;12=memory cpu  effects
+dw      0,  255*256+ 1, stactrmcf,    50,    69,    50,     8, 0    ;13=memory cpu  free
+dw      0,  255*256+ 1, stactrmom,   118,    49,    50,     8, 0    ;14=memory opl4 music
+dw      0,  255*256+ 1, stactrmox,   118,    59,    50,     8, 0    ;15=memory opl4 effects
+dw      0,  255*256+ 1, stactrmof,   118,    69,    50,     8, 0    ;16=memory opl4 free
 
-dw memmus,  255*256+16, statxtmmu,     3,    87,    81,    12, 0    ;17=button clean-up music
-dw memefx,  255*256+16, statxtmfx,    88,    87,    81,    12, 0    ;18=button clean-up effects
+dw memmus,  255*256+16, statxtmmu,     3,    91,    85,    12, 0    ;17=button clean-up music
+dw memefx,  255*256+16, statxtmfx,    92,    91,    85,    12, 0    ;18=button clean-up effects
 
 dw      0,  255*256+ 1, stactrdrv,     3,   113,   112,     8, 0    ;19=driver description
-dw stahid,  255*256+16, statxtbta,   133,   111,    36,    12, 0    ;20=button hide
+dw stahid,  255*256+16, statxtbta,   125,   111,    52,    12, 0    ;20=button hide
 
 
 ;### General
