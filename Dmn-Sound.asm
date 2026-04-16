@@ -2996,7 +2996,7 @@ db #61,#11,#11,#11,#11,#11,#68,#88
 ;==============================================================================
 
 texts_int
-read"Dmn-Sound-Texts.asm"
+read"Dmn-Sound-i18n.asm"
 texts_int_end
 
 list
@@ -3177,7 +3177,7 @@ prgmsgam2  dw prgmsgam11,4*1+2,prgmsgam22,4*1+2,prgmsgam23,4*1+2
 
 
 ;### systray mixer window/menu data
-mixwinxln   equ 98
+mixwinxln   equ 106
 mixwinyln   equ 54
 
 trymendat   dw 7
@@ -3193,14 +3193,14 @@ mixwindat   dw #0501,4,56,26,mixwinxln,mixwinyln,0,0,mixwinxln,mixwinyln,mixwinx
 mixwingrp   db 9,0:dw mixwinrec,0,0,8*256+9,0,0,7
 mixwinrec
 dw      0,  255*256+ 0,         2,     0,     0, 10000, 10000, 0    ;00=background
-dw      0,  255*256+10, gfxsnd   ,     2,     2,    16,    16, 0    ;01=effects icon
-dw      0,  255*256+10, gfxvol   ,    28,     3,    60,     5, 0    ;02=effects volgfx
-dw setxvl,  255*256+24, genctrsfx,    20,    10,    76,     8, 0    ;03=effects slider
-dw      0,  255*256+10, gfxmus   ,     2,    22,    16,    16, 0    ;04=music   icon
-dw      0,  255*256+10, gfxvol   ,    28,    23,    60,     5, 0    ;05=music   volgfx
-dw setmvl,  255*256+24, genctrsms,    20,    30,    76,     8, 0    ;06=music   slider
-dw prgtry3, 255*256+16, gentxtoky,     2,    40,    32,    12, 0    ;07=button "ok"
-dw prgtrys, 255*256+16, gentxtset,    36,    40,    60,    12, 0    ;08=button "seetings"
+dw      0,  255*256+10, gfxsnd   ,     4,     2,    16,    16, 0    ;01=effects icon
+dw      0,  255*256+10, gfxvol   ,    34,     3,    60,     5, 0    ;02=effects volgfx
+dw setxvl,  255*256+24, genctrsfx,    26,    10,    76,     8, 0    ;03=effects slider
+dw      0,  255*256+10, gfxmus   ,     4,    22,    16,    16, 0    ;04=music   icon
+dw      0,  255*256+10, gfxvol   ,    34,    23,    60,     5, 0    ;05=music   volgfx
+dw setmvl,  255*256+24, genctrsms,    26,    30,    76,     8, 0    ;06=music   slider
+dw prgtry3, 255*256+16, gentxtoky,     2,    40,    40,    12, 0    ;07=button "ok"
+dw prgtrys, 255*256+16, gentxtset,    44,    40,    60,    12, 0    ;08=button "seetings"
 
 
 ;### status window data

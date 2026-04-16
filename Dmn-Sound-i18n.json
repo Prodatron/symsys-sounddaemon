@@ -1,6 +1,6 @@
 {
     "asm": {
-        "0": "Dmn-Sound-Texts.asm"
+        "0": "Dmn-Sound-i18n.asm"
     },
     "csv": "Dmn-Sound-i18n.csv",
     "lng": "f:/symbos/soundd.lng"

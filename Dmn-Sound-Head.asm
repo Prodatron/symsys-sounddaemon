@@ -2,7 +2,7 @@ nolist
 
 READ "..\..\..\SRC-Main\SymbOS-Constants.asm"
 
-PLATFORM_TYPE   equ PLATFORM_CPC
+PLATFORM_TYPE   equ PLATFORM_MSX
 OPL4EMU         equ 0               ;1=OPL4 emulation
 
 org #1000
@@ -10,19 +10,19 @@ org #1000
     if PLATFORM_TYPE=PLATFORM_CPC
     write "f:\symbos\soundd.exe"
 elseif PLATFORM_TYPE=PLATFORM_MSX
-    write "f:\symbos\msx\soundd.exe"
+    write "f:\symbos\_msx\soundd.exe"
 elseif PLATFORM_TYPE=PLATFORM_PCW
-    write "f:\symbos\pcw\soundd.exe"
+    write "f:\symbos\_pcw\soundd.exe"
 elseif PLATFORM_TYPE=PLATFORM_EPR
-    write "f:\symbos\ep\soundd.exe"
+    write "f:\symbos\_ep\soundd.exe"
 elseif PLATFORM_TYPE=PLATFORM_SVM
-    write "f:\symbos\svm\soundd.exe"
+    write "f:\symbos\_svm\soundd.exe"
 elseif PLATFORM_TYPE=PLATFORM_NCX
-    write "f:\symbos\nc\soundd.exe"
+    write "f:\symbos\_nc\soundd.exe"
 elseif PLATFORM_TYPE=PLATFORM_ZNX
-    write "f:\symbos\nxt\soundd.exe"
+    write "f:\symbos\_nxt\soundd.exe"
 elseif PLATFORM_TYPE=PLATFORM_ISA
-    write "f:\symbos\isa\soundd.exe"
+    write "f:\symbos\_isa\soundd.exe"
 endif
 
 relocate_start
