@@ -163,10 +163,10 @@ stawinvis   db 0    ;0=not visible, -1=visible
 
 ;### PRGPRZ -> Application process
 prgprz  call prgdbl                 ;check, if already running
-        call prglng
-        call prgver
+        call prglng                 ;set language
+        call prgver                 ;check platform
         ld hl,prgmsgam1
-        call prgamp
+        call prgamp                 ;check, if SymAmp is running
         jp z,prgend1
 
         call dvcini
@@ -195,10 +195,18 @@ prgprz3 call cfglod
         call dskonl                 ;activate desktop sound effects
 
         call SySystem_HLPINI        ;init help
+
+        ld a,(App_BegCode+47)
+        dec a
+        jr z,prgprz7    ;norml -> open window
+        dec a
+        jr z,prgprz7    ;maxim -> open window
+        dec a
+        jr z,prgprz0    ;minim -> skip window
+
         ld a,(cfgflghid)
         or a
-        call z,prgtry1              ;open main window
-        jp c,prgend1
+prgprz7 call z,prgtry1              ;open main window
 
 prgprz0 ld ix,(App_PrcID)           ;check for messages
         db #dd:ld h,-1

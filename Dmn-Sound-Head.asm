@@ -2,7 +2,7 @@ nolist
 
 READ "..\..\..\SRC-Main\SymbOS-Constants.asm"
 
-PLATFORM_TYPE   equ PLATFORM_MSX
+PLATFORM_TYPE   equ PLATFORM_PCW
 OPL4EMU         equ 0               ;1=OPL4 emulation
 
 org #1000
@@ -12,7 +12,7 @@ org #1000
 elseif PLATFORM_TYPE=PLATFORM_MSX
     write "f:\symbos\_msx\soundd.exe"
 elseif PLATFORM_TYPE=PLATFORM_PCW
-    write "f:\symbos\_pcw\soundd.exe"
+    write "c:\archive\projekte\symbos\_pcw\files\soundd.exe"
 elseif PLATFORM_TYPE=PLATFORM_EPR
     write "f:\symbos\_ep\soundd.exe"
 elseif PLATFORM_TYPE=PLATFORM_SVM

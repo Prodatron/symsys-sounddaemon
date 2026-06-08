@@ -81,6 +81,7 @@ PLY_SE_PLAYSOUNDEFFECTSSTREAM ld ix,PLY_SE_CHANNEL1_SOUNDEFFECTDATA
     exx
     ld hl,PLY_SE_PSGREG45_INSTR+1
     exx
+    scf
     rr c
     call PLY_SE_PSES_PLAY
     ld a,c

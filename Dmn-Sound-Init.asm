@@ -14,5 +14,5 @@ if PLATFORM_TYPE=PLATFORM_SVM
         out (P_PSG1CTRL),a
         ld a,D_PSGOFF
         out (P_PSG2CTRL),a
-        ret
 endif
+        ret
